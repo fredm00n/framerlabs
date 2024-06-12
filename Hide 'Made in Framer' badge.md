@@ -1,7 +1,4 @@
-# Untitled
-
-Created time: June 12, 2024 9:58 AM
-Status: Not started
+# How to hide the Made in Framer badge on framer.com projects
 
 This code hides the Made in Framer badge.
 
