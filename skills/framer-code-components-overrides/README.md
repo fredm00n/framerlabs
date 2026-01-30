@@ -13,24 +13,24 @@ A Claude Code skill for building custom React components and Code Overrides in F
 
 ## Installation
 
-> **Note:** This skill consists of multiple files (see [Skill Contents](#skill-contents) below). Download the entire `framer-code-components-overrides` folder, not just individual files.
-
-### Option A: Project-based (recommended)
-
-Copy the skill into your project's `.claude/skills/` folder:
-
 ```bash
-# From your project root
+npx skills add fredm00n/framerlabs --skill framer-code-components-overrides
+```
+
+This installs the skill into your project's `.claude/skills/` folder.
+
+<details>
+<summary>Manual installation</summary>
+
+This skill consists of multiple files. Download the entire `framer-code-components-overrides` folder, not just individual files.
+
+**Project-based** (in `.claude/skills/`):
+```bash
 mkdir -p .claude/skills
 cp -r /path/to/framer-code-components-overrides .claude/skills/
 ```
 
-The skill will only be available when Claude Code runs in that project.
-
-### Option B: Global
-
-Copy the skill into your personal Claude Code skills folder:
-
+**Global** (available across all projects):
 ```bash
 # Windows
 cp -r /path/to/framer-code-components-overrides %USERPROFILE%\.claude\skills\
@@ -39,7 +39,7 @@ cp -r /path/to/framer-code-components-overrides %USERPROFILE%\.claude\skills\
 cp -r /path/to/framer-code-components-overrides ~/.claude/skills/
 ```
 
-The skill will be available across all your projects.
+</details>
 
 ## Usage
 
