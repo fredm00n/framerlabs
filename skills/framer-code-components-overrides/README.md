@@ -13,6 +13,8 @@ A Claude Code skill for building custom React components and Code Overrides in F
 
 ## Installation
 
+> **Note:** This skill consists of multiple files (see [Skill Contents](#skill-contents) below). Download the entire `framer-code-components-overrides` folder, not just individual files.
+
 ### Option A: Project-based (recommended)
 
 Copy the skill into your project's `.claude/skills/` folder:
