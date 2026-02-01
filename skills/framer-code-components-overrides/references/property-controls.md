@@ -10,8 +10,11 @@ text: {
     defaultValue: "Hello",
     placeholder: "Enter text...",
     displayTextArea: true, // For multiline
+    preventLocalization: true, // Prevents automatic translation
 }
 ```
+
+Use `preventLocalization: true` for technical content that shouldn't be translated (API keys, code snippets, etc.).
 
 ### Number
 ```typescript
@@ -69,6 +72,47 @@ image: {
 
 Returns URL string. For previews in the control panel, use `ControlType.ResponsiveImage`.
 
+### ResponsiveImage / File — No defaultValue Support
+
+**Critical**: `ControlType.ResponsiveImage` and `ControlType.File` do NOT support `defaultValue` in property controls. You must use component parameter destructuring instead:
+
+```typescript
+// ❌ WRONG - defaultValue is ignored
+addPropertyControls(MyComponent, {
+    image: {
+        type: ControlType.ResponsiveImage,
+        defaultValue: { src: "...", alt: "..." }, // This does nothing!
+    },
+})
+
+// ✅ CORRECT - Use parameter destructuring
+function MyComponent(props) {
+    const {
+        image = {
+            src: "https://framerusercontent.com/images/GfGkADagM4KEibNcIiRUWlfrR0.jpg",
+            alt: "Default image"
+        }
+    } = props
+
+    return <img {...image} />
+}
+
+addPropertyControls(MyComponent, {
+    image: { type: ControlType.ResponsiveImage },
+})
+```
+
+Same pattern applies to `ControlType.File`:
+```typescript
+function MyComponent(props) {
+    const {
+        videoFile = "https://framerusercontent.com/assets/MLWPbW1dUQawJLhhun3dBwpgJak.mp4"
+    } = props
+
+    return <video src={videoFile} />
+}
+```
+
 ### File
 ```typescript
 video: {
@@ -94,6 +138,33 @@ font: {
 ```
 
 **Critical**: Always spread the entire font object in styles: `...props.font`
+
+#### Variant-to-FontWeight Mapping
+
+Framer uses `variant` names that map to CSS `font-weight` and `font-style`:
+
+| Variant | font-weight | font-style |
+|---------|-------------|------------|
+| Thin | 100 | normal |
+| Extra Light | 200 | normal |
+| Light | 300 | normal |
+| Regular | 400 | normal |
+| Medium | 500 | normal |
+| Semibold | 600 | normal |
+| Bold | 700 | normal |
+| Extra Bold | 800 | normal |
+| Black | 900 | normal |
+| Thin Italic | 100 | italic |
+| Extra Light Italic | 200 | italic |
+| Light Italic | 300 | italic |
+| Italic / Regular Italic | 400 | italic |
+| Medium Italic | 500 | italic |
+| Semibold Italic | 600 | italic |
+| Bold Italic | 700 | italic |
+| Extra Bold Italic | 800 | italic |
+| Black Italic | 900 | italic |
+
+Use these variant names in `defaultValue.variant` when setting up Font controls.
 
 ### Transition
 ```typescript
@@ -147,12 +218,15 @@ images: {
 settings: {
     type: ControlType.Object,
     title: "Settings",
+    icon: "effect", // UI icon: "object" | "effect" | "color" | "interaction" | "boolean"
     controls: {
         opacity: { type: ControlType.Number, defaultValue: 1 },
         color: { type: ControlType.Color, defaultValue: "#fff" },
     },
 }
 ```
+
+The `icon` property changes how the control appears in Framer's property panel. Options: `"object"`, `"effect"`, `"color"`, `"interaction"`, `"boolean"`.
 
 ## Conditional Visibility
 
