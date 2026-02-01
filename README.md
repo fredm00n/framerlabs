@@ -26,6 +26,12 @@ Workarounds and tricks for Framer.
 | [Show element only once](hacks/Show%20element%20only%20once.md) | Show popups/banners only on first visit |
 | [Auto-sized text fix](hacks/Auto-sized%20text%20fix.md) | Fix text collapse in auto-sized components |
 
+## Changelog
+
+**2026-02-02** — Added advanced gotchas: startTransition requirement, ResponsiveImage/File defaultValue workaround, variant-to-font-weight mapping, and more property control tips.
+
+**2026-01-30** — Initial release with Framer code components skill and 6 hacks.
+
 ## License
 
 MIT
