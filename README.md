@@ -24,6 +24,7 @@ Workarounds and tricks for Framer.
 | [Force NPM package version](hacks/Force%20NPM%20package%20version.md) | Bypass Framer's package cache with esm.sh |
 | [Shared state between overrides](hacks/Shared%20state%20between%20overrides.md) | Make multiple elements react to each other |
 | [Show element only once](hacks/Show%20element%20only%20once.md) | Show popups/banners only on first visit |
+| [Auto-sized text fix](hacks/Auto-sized%20text%20fix.md) | Fix text collapse in auto-sized components |
 
 ## License
 
