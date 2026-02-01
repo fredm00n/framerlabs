@@ -102,6 +102,24 @@ font: {
 }
 ```
 
+## Critical: Wrap State Updates in startTransition
+
+All React state updates in Framer must be wrapped in `startTransition()`:
+
+```typescript
+import { startTransition } from "react"
+
+// ❌ WRONG - May cause issues in Framer's rendering pipeline
+setCount(count + 1)
+
+// ✅ CORRECT - Always wrap state updates
+startTransition(() => {
+    setCount(count + 1)
+})
+```
+
+This is Framer-specific and prevents performance issues with concurrent rendering.
+
 ## Critical: Hydration Safety
 
 Framer pre-renders on server. Browser APIs unavailable during SSR.
@@ -213,6 +231,7 @@ Always include `?external=react,react-dom` for React components.
 | Scroll animation broken | `overflow: scroll` on container | Use IntersectionObserver on viewport |
 | Shader attach error | Null shader from compilation failure | Check `createShader()` return before `attachShader()` |
 | Component display name | Need custom name in Framer UI | `Component.displayName = "Name"` |
+| TypeScript `Timeout` errors | Using `NodeJS.Timeout` type | Use `number` instead — browser environment |
 
 ## Mobile Optimization
 
