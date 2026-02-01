@@ -30,7 +30,7 @@ Workarounds and tricks for Framer.
 
 **2026-02-02** — Added advanced gotchas: startTransition requirement, ResponsiveImage/File defaultValue workaround, variant-to-font-weight mapping, and more property control tips.
 
-**2026-01-30** — Initial release with Framer code components skill and 6 hacks.
+**2026-01-30** — First skill + hacks
 
 ## License
 
