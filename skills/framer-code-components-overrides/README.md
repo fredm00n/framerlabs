@@ -75,6 +75,9 @@ framer-code-components-overrides/
 - Mobile optimization
 - CMS content timing
 - Safari SVG fixes
+- React Portals for z-index stacking context
+- Loading states with scroll lock
+- Easing curves for lerp animations with initial distance tracking
 
 ## License
 
