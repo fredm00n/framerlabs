@@ -1,9 +1,13 @@
 ---
 name: framer-plugins
-description: >
-  Framer Plugin SDK expert. Use when building, debugging, or modifying
-  Framer plugins. Covers ManagedCollection API, CMS sync, plugin modes,
-  UI patterns, permissions, data storage, and common pitfalls.
+description: "Implement Framer plugins, configure ManagedCollection APIs, sync CMS data, set up plugin permissions, and debug data storage issues. Use when building or modifying Framer plugins — covers plugin modes, UI patterns, field definitions, Marketplace submission, and common pitfalls."
+triggers:
+  - "framer plugin"
+  - "plugin sdk"
+  - "managed collection"
+  - "cms sync"
+  - "plugin mode"
+  - "framer marketplace"
 user-invocable: true
 license: MIT
 metadata:
@@ -53,6 +57,20 @@ Every plugin needs a `framer.json` at the project root:
 | `collection` | Access user-editable collections | `"collection"` |
 
 CMS plugins use both `configureManagedCollection` + `syncManagedCollection`.
+
+## CMS Plugin Lifecycle
+
+Follow this sequence when building a CMS sync plugin:
+
+1. **Configure fields** (`configureManagedCollection` mode) — call `collection.setFields()` to define schema, store source ID via `collection.setPluginData()`
+2. **Check permissions** — verify `framer.isAllowedTo("ManagedCollection.setFields", "ManagedCollection.addItems", "ManagedCollection.removeItems")` before sync
+3. **Fetch source data** — retrieve items from external API/data source
+4. **Diff against existing** — call `collection.getItemIds()` to find items to add, update, or remove
+5. **Upsert items** — call `collection.addItems()` (remember: this is upsert — no need to check existence first)
+6. **Remove stale items** — call `collection.removeItems()` only for IDs no longer in source (never remove-all + re-add)
+7. **Validate** — verify sync succeeded, then call `framer.closePlugin("Synced N items", { variant: "success" })`
+
+In `syncManagedCollection` mode, attempt silent sync first (skip to step 2). Show UI only if re-configuration is needed.
 
 ## Core framer API
 
@@ -225,7 +243,6 @@ For deeper information, see the companion files in this skill directory:
 ## Key Rules
 
 1. Always check the project's `CLAUDE.md` for project-specific overrides and decisions
-16. **Before building any new feature**, check [marketplace.md](references/marketplace.md) — the plugin must comply with Framer's policies (English UI, light+dark mode, no ads, USD-only pricing, IP ownership, etc.) or it will be rejected during the ~3-week review process
 2. CMS plugins should attempt silent sync in `syncManagedCollection` mode before showing UI
 3. `addItems()` is upsert — no need to check for existing items before adding
 4. Field data values MUST include explicit `type` property: `{ type: "string", value: "..." }`
@@ -240,3 +257,4 @@ For deeper information, see the companion files in this skill directory:
 13. Never include user-editable fields in `fieldData` during upsert — omitting them preserves user values
 14. Never remove-all + re-add during sync — only remove items no longer in the source to preserve user data
 15. `ManagedCollection` has no `getItems()` — you can only read item IDs, not field data
+16. **Before building any new feature**, check [marketplace.md](references/marketplace.md) — the plugin must comply with Framer's policies (English UI, light+dark mode, no ads, USD-only pricing, IP ownership, etc.) or it will be rejected during the ~3-week review process
