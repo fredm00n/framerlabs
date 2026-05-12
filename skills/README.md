@@ -65,6 +65,8 @@ Build custom React components and Code Overrides in Framer.
 - Loading states with scroll lock
 - Easing curves for lerp animations
 - HLS video streaming (.m3u8) with dynamic HLS.js import
+- Variable-bound vs static text in overrides (`props.text` first, children fallback)
+- Triggering Framer-attached handlers from code via React fiber traversal (e.g. URL deep link to an overlay)
 
 **File structure:**
 ```

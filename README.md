@@ -25,8 +25,11 @@ Workarounds and tricks for Framer.
 | [Show element only once](hacks/Show%20element%20only%20once.md) | Show popups/banners only on first visit |
 | [Auto-sized text fix](hacks/Auto-sized%20text%20fix.md) | Fix text collapse in auto-sized components |
 | [Dynamic FAQ accordion](hacks/Dynamic%20FAQ%20accordion.md) | Auto-close other FAQ items when one opens, via a shared store |
+| [Overlay deep link from URL](hacks/Overlay%20deep%20link%20from%20URL.md) | Open a Framer overlay from a URL parameter via React fiber traversal |
 
 ## Changelog
+
+**2026-05-13** — Added Overlay deep link from URL hack (open a Framer overlay from `?member=<slug>` by calling Framer's `onTap` handler via React fiber traversal instead of dispatching synthetic events). Skill: new "Triggering Framer-Attached Handlers from Code" section with the `findFiberHandler` helper and debugging snippets. Also sync'd skill with corrections from a prior revision — replaced the old `setTimeout(100)` CMS-timing pattern with the `resolvePlainText` gating pattern, replaced the recursive `cloneElement` text-manipulation example with the `props.text`-first / children-fallback pattern, and removed the incorrect blanket `startTransition` rule.
 
 **2026-04-17** — Added Dynamic FAQ accordion hack (shared-store override that toggles `Closed`/`Opened` variants without wrapping the list in a single component).
 

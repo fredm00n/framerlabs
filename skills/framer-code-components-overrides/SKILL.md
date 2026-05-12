@@ -102,24 +102,6 @@ font: {
 }
 ```
 
-## Critical: Wrap State Updates in startTransition
-
-All React state updates in Framer must be wrapped in `startTransition()`:
-
-```typescript
-import { startTransition } from "react"
-
-// ❌ WRONG - May cause issues in Framer's rendering pipeline
-setCount(count + 1)
-
-// ✅ CORRECT - Always wrap state updates
-startTransition(() => {
-    setCount(count + 1)
-})
-```
-
-This is Framer-specific and prevents performance issues with concurrent rendering.
-
 ## Critical: Hydration Safety
 
 Framer pre-renders on server. Browser APIs unavailable during SSR.
@@ -277,6 +259,7 @@ function attachHls(videoEl, src) {
 
 | Issue | Cause | Fix |
 |-------|-------|-----|
+| Variable text not found in override | Reading only `props.children` | Check `props.text` first — variable-bound text bypasses children |
 | Font styles not applying | Accessing font props individually | Spread entire font object: `...props.font` |
 | Hydration mismatch | Browser API in render | Use `isClient` state pattern |
 | Override props undefined | Expecting property controls | Overrides don't support `addPropertyControls` |
@@ -287,6 +270,7 @@ function attachHls(videoEl, src) {
 | Overlay stuck under content | Stacking context from parent | Use React Portal to render at `document.body` level |
 | Easing feels same for all curves | Not tracking initial distance | Track `initialDiff` when target changes for progress calculation |
 | HLS video permanently pixelated | `.m3u8` in Chrome without HLS.js | Use HLS.js dynamic import pattern (see HLS section above) |
+| Overlay stuck "half-pressed" / needs two clicks to close | Triggering Framer interactions with synthetic events (`dispatchEvent`) | Call the React handler directly via fiber traversal (see "Triggering Framer-Attached Handlers") |
 
 ## Mobile Optimization
 
@@ -298,44 +282,158 @@ For particle systems and heavy animations:
 
 ## CMS Content Timing
 
-CMS content loads asynchronously after hydration. Processing sequence:
-1. SSR: Placeholder content
-2. Hydration: React attaches
-3. CMS Load: Real content (~50-200ms)
+CMS text arrives in `props.text` asynchronously (~50–200ms after hydration). For variable-bound text from component props, it's synchronous on first render — no delay needed.
 
-Add delay before processing CMS data:
+The reliable pattern for both: use `resolvePlainText(props)` (see Text in Overrides) and gate on the value being non-empty:
+
 ```typescript
-useEffect(() => {
-    if (isClient && props.children) {
-        const timer = setTimeout(() => {
-            processContent(props.children)
-        }, 100)
-        return () => clearTimeout(timer)
-    }
-}, [isClient, props.children])
+const plainText = resolvePlainText(props)
+// plainText is "" until content arrives → gate your animation on plainText.length > 0
 ```
 
-## Text Manipulation in Overrides
+Avoid 100ms arbitrary delays — they cause race conditions when the element is already in the viewport on load.
 
-Framer text uses deeply nested structure. Process recursively:
+## Text in Overrides
+
+**Text comes from two different sources depending on how it's set:**
+
+| Source | Where it lives | When |
+|--------|---------------|------|
+| Static text (typed in Framer) | `props.children` nested structure | Always available on first render |
+| Variable-bound text (component prop / CMS) | `props.text` (plain string) | Available on first render for variables; async for CMS |
+
+**Always check `props.text` first, fall back to children:**
 
 ```typescript
-const processChildren = (children) => {
-    if (typeof children === "string") {
-        return processText(children)
+import { isValidElement } from "react"
+
+function extractParts(raw: any): any[] {
+    if (typeof raw === "string") return [raw]
+    if (isValidElement(raw)) return [raw]
+    if (Array.isArray(raw)) return raw.flatMap(extractParts)
+    return []
+}
+
+function toPlainText(parts: any[]): string {
+    return parts.map((p) => (typeof p === "string" ? p : "\n")).join("")
+}
+
+function resolvePlainText(props: any): string {
+    if (typeof props.text === "string" && props.text.length > 0) {
+        return props.text  // variable-bound or CMS
     }
-    if (isValidElement(children)) {
-        return cloneElement(children, {
-            ...children.props,
-            children: processChildren(children.props.children)
-        })
-    }
-    if (Array.isArray(children)) {
-        return children.map(child => processChildren(child))
-    }
-    return children
+    const raw = props.children?.props?.children?.props?.children
+    return toPlainText(extractParts(raw))  // static text
 }
 ```
+
+**Never assume text is only in `props.children`.** Variable-bound text bypasses the children structure entirely — `props.children` will contain a placeholder while `props.text` has the real value. If you only read children, variable text is invisible to your override.
+
+## Triggering Framer-Attached Handlers from Code
+
+When you need to programmatically fire a Framer/Framer Motion interaction (open an overlay, trigger a tap, etc.), **synthetic DOM events do not work reliably**. Framer Motion attaches handlers like `onTap` as React handlers, not native DOM listeners — synthetic events take a different code path and leave Framer Motion's internal state desynchronised. Symptoms include stuck press/focus state, two-click-to-close bugs, and other "half-pressed" weirdness that persists for the rest of the session on that element.
+
+**Reach into the React fiber tree and call the handler directly:**
+
+```typescript
+function findFiberHandler(el: HTMLElement, name: string): unknown {
+    const key = Object.keys(el).find((k) => k.startsWith("__reactFiber"))
+    if (!key) return undefined
+    let fiber: any = (el as any)[key]
+    let depth = 0
+    while (fiber && depth < 15) {
+        const p = fiber.memoizedProps
+        if (p && typeof p[name] === "function") return p[name]
+        fiber = fiber.return
+        depth++
+    }
+    return undefined
+}
+
+const onTap = findFiberHandler(wrapper, "onTap")
+onTap?.({} as any, {} as any)
+```
+
+**Why walk `fiber.return`:** Framer wraps interactive elements in Framer Motion components several fiber levels above the rendered DOM node. The DOM wrapper does not carry `onTap` in its own props — you have to walk up to find it. In practice the handler lives ~2 levels up; 15 is a safe ceiling.
+
+In Framer, overlay triggers render as DOM nodes with `tabindex="0"` and an id, so `el.closest("[tabindex]")` is a reliable way to find the wrapper from a child override.
+
+### Use case: URL deep link to an overlay
+
+Apply an override to a CMS text field bound to a per-item slug. On mount, match the URL param against `props.text`, walk up to the nearest `[tabindex]` wrapper, find `onTap`, invoke it, then clean the URL:
+
+```typescript
+import type { ComponentType } from "react"
+import { useEffect, useRef } from "react"
+
+/**
+ * @framerDisableUnlink
+ */
+export function withMemberDeepLink(Component): ComponentType {
+    return (props) => {
+        const ref = useRef<HTMLElement | null>(null)
+        const done = useRef(false)
+
+        useEffect(() => {
+            if (done.current || typeof window === "undefined") return
+            const target = new URLSearchParams(window.location.search).get("member")
+            if (!target || target !== (props.text || "").trim()) return
+
+            const t = setTimeout(() => {
+                const wrapper = ref.current?.closest("[tabindex]") as HTMLElement | null
+                if (!wrapper) return
+                const onTap = findFiberHandler(wrapper, "onTap")
+                if (typeof onTap !== "function") return
+
+                onTap({} as any, {} as any)
+
+                const url = new URL(window.location.href)
+                url.searchParams.delete("member")
+                window.history.replaceState({}, "", url.toString())
+                done.current = true
+            }, 500)
+
+            return () => clearTimeout(t)
+        }, [props.text])
+
+        return (
+            <span ref={ref} style={{ display: "contents" }}>
+                <Component {...props} />
+            </span>
+        )
+    }
+}
+```
+
+The 500ms timeout here is waiting for Framer's overlay wrapper to mount, not for CMS content — different concern from the CMS Content Timing section above.
+
+### Debugging React internals
+
+Inspect props on an element:
+```js
+const el = document.getElementById("YOUR_ID")
+const key = Object.keys(el).find(k => k.startsWith("__reactProps"))
+console.log(el[key])
+```
+
+Find all handler functions up the fiber tree (useful when you don't yet know what Framer attached or at which depth):
+```js
+const el = document.getElementById("YOUR_ID")
+const fiberKey = Object.keys(el).find(k => k.startsWith("__reactFiber"))
+let fiber = el[fiberKey]
+for (let depth = 0; fiber && depth < 15; depth++, fiber = fiber.return) {
+    const mp = fiber.memoizedProps
+    if (!mp) continue
+    const fns = Object.keys(mp).filter(k => typeof mp[k] === "function")
+    if (fns.length) console.log(`Depth ${depth}:`, fns)
+}
+```
+
+### Maintenance risks
+
+- `__reactFiber$...` / `__reactProps$...` are React internals. The `$<suffix>` changes between React builds; the prefixes have been stable for years but are not officially supported API.
+- Framer Motion handler names (`onTap` etc.) could change with future Framer updates.
+- Fiber depth to reach the handler is project-dependent — 15 is a safe ceiling but may need to grow if Framer restructures wrappers.
 
 ## Animation Best Practices
 
