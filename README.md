@@ -29,7 +29,7 @@ Workarounds and tricks for Framer.
 
 ## Changelog
 
-**2026-05-13** — Added Overlay deep link from URL hack (open a Framer overlay from `?member=<slug>` by calling Framer's `onTap` handler via React fiber traversal instead of dispatching synthetic events). Skill: new "Triggering Framer-Attached Handlers from Code" section with the `findFiberHandler` helper and debugging snippets. Also sync'd skill with corrections from a prior revision — replaced the old `setTimeout(100)` CMS-timing pattern with the `resolvePlainText` gating pattern, replaced the recursive `cloneElement` text-manipulation example with the `props.text`-first / children-fallback pattern, and removed the incorrect blanket `startTransition` rule.
+**2026-05-13** — Added Overlay deep link from URL hack (open a Framer overlay from a URL param via React fiber traversal). Skill: new section on triggering Framer-attached handlers from code, plus a few corrections to the text and CMS-timing guidance.
 
 **2026-04-17** — Added Dynamic FAQ accordion hack (shared-store override that toggles `Closed`/`Opened` variants without wrapping the list in a single component).
 
