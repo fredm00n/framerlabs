@@ -365,3 +365,147 @@ const placeholders = {
 ```
 
 Use these when setting default values via parameter destructuring (since `ControlType.ResponsiveImage` and `ControlType.File` don't support `defaultValue`).
+
+## Animation Best Practices
+
+**Separate positioning from animation:**
+```typescript
+<motion.div
+    style={{
+        position: "absolute",
+        left: `${offset}px`,  // Static positioning
+        x: animatedValue,     // Animation transform
+    }}
+/>
+```
+
+**Split animation phases for natural motion:**
+```typescript
+// Up: snappy pop
+transition={{ duration: 0.15, ease: [0, 0, 0.39, 2.99] }}
+
+// Down: smooth settle
+transition={{ duration: 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
+```
+
+## Safari SVG Fix
+
+Force GPU acceleration for smooth SVG animations:
+```typescript
+style={{
+    willChange: "transform",
+    transform: "translateZ(0)",
+    backfaceVisibility: "hidden",
+}}
+```
+
+## Mobile Optimization
+
+For particle systems and heavy animations:
+- Implement resize debouncing (500ms default)
+- Add size change threshold (15% minimum)
+- Handle orientation changes with dedicated listener
+- Use `touchAction: "none"` to prevent scroll interference
+
+## Loading States with Scroll Lock
+
+**Pattern:** Show loading overlay and prevent page scroll until content is ready.
+
+```typescript
+const [isLoading, setIsLoading] = useState(true)
+const [fadeOut, setFadeOut] = useState(false)
+
+// Prevent scroll while loading (published site only)
+useEffect(() => {
+    const isPublished = RenderTarget.current() !== "CANVAS"
+    if (!isPublished || !isLoading) return
+
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+
+    return () => {
+        document.body.style.overflow = originalOverflow
+    }
+}, [isLoading])
+
+// Two-phase hide: fade-out → remove from DOM
+const hideLoader = () => {
+    setFadeOut(true)
+    setTimeout(() => setIsLoading(false), 300) // Match CSS transition
+}
+```
+
+**Scroll to top on load** (fixes variant sequence issues):
+```typescript
+useEffect(() => {
+    const isPublished = RenderTarget.current() !== "CANVAS"
+    if (isPublished) {
+        window.scrollTo(0, 0)
+    }
+}, [])
+```
+
+## Easing Curves with Lerp Animations
+
+**Problem:** Exponential lerp (`value += diff * speed`) naturally gives ease-out. Need to track initial distance to implement other curves.
+
+**Solution:** Track `initialDiff` when animation starts:
+
+```typescript
+const animated = useRef({
+    property: {
+        current: 0,
+        target: 0,
+        initialDiff: 0,  // Track for easing calculations
+    }
+})
+
+// When target changes, store initial distance
+const updateTarget = (newTarget) => {
+    const entry = animated.current.property
+    entry.initialDiff = Math.abs(newTarget - entry.current)
+    entry.target = newTarget
+}
+
+// Apply easing in animation loop
+const applyEasing = (easingCurve) => {
+    const v = animated.current.property
+    const diff = v.target - v.current
+    let speed = 0.05  // Base speed
+
+    if (easingCurve !== "ease-out") {
+        // Calculate progress: 0 at start, 1 near target
+        const diffMagnitude = Math.abs(diff)
+        const progress = v.initialDiff > 0
+            ? Math.max(0, Math.min(1, 1 - (diffMagnitude / v.initialDiff)))
+            : 1
+
+        if (easingCurve === "ease-in") {
+            // Start slow, end fast (cubic)
+            speed *= (0.05 + Math.pow(progress, 3) * 10)
+        } else if (easingCurve === "ease-in-out") {
+            // Slow-fast-slow (smootherstep)
+            const smoothed = progress * progress * progress *
+                (progress * (progress * 6 - 15) + 10)
+            speed *= (0.2 + smoothed * 3)
+        }
+    }
+    // ease-out: use default exponential decay
+
+    v.current += diff * speed
+}
+```
+
+**Why aggressive curves?**
+Exponential lerp naturally slows down approaching target. To create noticeable ease-in, need extreme multipliers (0.05x → 10x) to overcome the natural decay.
+
+**Property control:**
+```typescript
+easingCurve: {
+    type: ControlType.Enum,
+    title: "Easing Curve",
+    options: ["ease-out", "ease-in", "ease-in-out"],
+    optionTitles: ["Ease Out", "Ease In", "Ease In/Out"],
+    defaultValue: "ease-out",
+}
+```

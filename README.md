@@ -29,6 +29,8 @@ Workarounds and tricks for Framer.
 
 ## Changelog
 
+**2026-05-25** — Major skill refactor and new learnings: CMS-in-code-components pattern (`useQueryData` + `findByFramerName`, plain-frame trap), `ControlType.Color` token unwrapping, `useRef` vs `useState` for live-read targets (`useScroll` bug), SSR-safe state init with flip-in-effect, `startTransition` for concurrent rendering, gated `debugMode` logging. Restructured into 8 tagged sections (`[C]`/`[O]`/`[C/O]`), pitfalls table moved to the top, long-tail patterns promoted to references. Two new reference files: `cms.md` and `fiber-handlers.md`.
+
 **2026-05-13** — Added Overlay deep link from URL hack (open a Framer overlay from a URL param via React fiber traversal). Skill: new section on triggering Framer-attached handlers from code, plus a few corrections to the text and CMS-timing guidance.
 
 **2026-04-17** — Added Dynamic FAQ accordion hack (shared-store override that toggles `Closed`/`Opened` variants without wrapping the list in a single component).

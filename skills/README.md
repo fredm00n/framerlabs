@@ -47,26 +47,18 @@ cp -r /path/to/<skill-name> ~/.claude/skills/
 
 ## framer-code-components-overrides
 
-Build custom React components and Code Overrides in Framer.
+Build custom React components and Code Overrides in Framer. Sections are tagged `[C]` (code component), `[O]` (code override), or `[C/O]` (both).
 
 **Topics covered:**
-- Code Component vs Code Override patterns
-- Required `@framer` annotations
-- Font handling (critical: always spread the font object)
-- Hydration safety and SSR
-- Canvas vs Preview detection with `RenderTarget`
-- All property control types with examples
-- Conditional control visibility
-- Shared state between overrides
-- Scroll effects, magnetic hover, animation triggers
-- WebGL transparency and shader compilation
-- Mobile optimization, CMS content timing, Safari SVG fixes
-- React Portals for z-index stacking context
-- Loading states with scroll lock
-- Easing curves for lerp animations
-- HLS video streaming (.m3u8) with dynamic HLS.js import
-- Variable-bound vs static text in overrides (`props.text` first, children fallback)
-- Triggering Framer-attached handlers from code via React fiber traversal (e.g. URL deep link to an overlay)
+- Foundations — Code Component vs Code Override, required `@framer` annotations, starter templates
+- Authoring — font handling (always spread the font object), `ControlType.Color` token unwrapping, full property-controls reference
+- Rendering & SSR — hydration safety with SSR-init trap, `RenderTarget` canvas vs preview detection, `startTransition` for concurrent rendering, NPM imports
+- CMS — variable-bound vs static text in overrides, CMS content timing, full CMS-in-code-components pattern (`useQueryData` + `findByFramerName`, plain-frame trap, canvas preview limitation)
+- Overrides — variant control without prop access, triggering Framer-attached handlers via React fiber traversal (e.g. URL deep link to an overlay)
+- DOM & Performance — scroll detection constraint, `useRef` vs `useState` for live-read targets (`useScroll` etc.), React Portals for z-index stacking context, common patterns library
+- Media — HLS video streaming (`.m3u8`) with dynamic HLS.js import, WebGL transparency and shader compilation
+- Debug — gated `console.log` via module-level `debugMode` flag
+- Common patterns library — shared state, scroll effects, magnetic hover, animation triggers, mobile optimization, Safari SVG fix, loading states with scroll lock, easing curves for lerp animations
 
 **File structure:**
 ```
@@ -75,7 +67,9 @@ framer-code-components-overrides/
 └── references/
     ├── property-controls.md
     ├── patterns.md
-    └── webgl-shaders.md
+    ├── webgl-shaders.md
+    ├── cms.md              # CMS-in-code-components pattern
+    └── fiber-handlers.md   # Triggering Framer handlers via fiber traversal
 ```
 
 ## framer-plugins
