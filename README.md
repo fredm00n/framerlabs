@@ -17,7 +17,6 @@ Workarounds and tricks for Framer.
 
 | Hack | Description |
 |------|-------------|
-| [Hide 'Made in Framer' badge](hacks/Hide%20'Made%20in%20Framer'%20badge.md) | Hide the Framer badge on published sites |
 | [Safari SVG animation fix](hacks/Safari%20SVG%20animation%20fix.md) | Fix choppy SVG animations on Safari |
 | [Magnetic hover effect](hacks/Magnetic%20hover%20effect.md) | Elements that follow the cursor on hover |
 | [Force NPM package version](hacks/Force%20NPM%20package%20version.md) | Bypass Framer's package cache with esm.sh |
