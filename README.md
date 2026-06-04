@@ -28,6 +28,8 @@ Workarounds and tricks for Framer.
 
 ## Changelog
 
+**2026-06-04** — Skill: new sections on URL-driven filtering and styling range sliders, plus a tidy-up of the video streaming notes.
+
 **2026-05-25** — Skill refactor with new sections on CMS in code components, color tokens, live-read refs, SSR-safe state init, concurrent rendering, and gated debug logging. Reorganised into tagged sections with the pitfalls table moved to the top.
 
 **2026-05-13** — Added Overlay deep link from URL hack (open a Framer overlay from a URL param via React fiber traversal). Skill: new section on triggering Framer-attached handlers from code, plus a few corrections to the text and CMS-timing guidance.

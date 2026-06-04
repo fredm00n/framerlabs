@@ -27,6 +27,9 @@ Section tags: `[C]` applies to code components, `[O]` to code overrides, `[C/O]`
 | TypeScript `Timeout` errors | Using `NodeJS.Timeout` type | Use `number` instead — browser environment |
 | Component display name | Need custom name in Framer UI | `Component.displayName = "Name"` |
 | Easing feels same for all curves | Not tracking initial distance | Track `initialDiff` when target changes (see [references/patterns.md](references/patterns.md)) |
+| URL-bound filters don't react to a programmatic URL write | `replaceState`/`pushState` don't fire `popstate` | Dispatch it manually after writing (see [Writing State into the URL](#writing-state-into-the-url-c)) |
+| Slider drag floods browser history / traps Back | `pushState` on every `onChange` | Use `replaceState` for high-frequency writes |
+| Range input shows blue native fill / unstyleable thumb | Native `<input type="range">` chrome | `appearance:none` + neutralise track + custom thumb per engine (see [Styling Native Range Inputs](#styling-native-range-inputs-c)) |
 
 ## Contents
 
@@ -468,6 +471,35 @@ export default function ComponentWithOverlay(props) {
 
 **Canvas vs Published:** Portals work in both canvas editor and published site. No RenderTarget check needed.
 
+### Writing State into the URL `[C]`
+
+A component can drive **Framer's native URL-bound filtering** by writing a query param. Framer's filters do the reading/filtering — your component only writes the param and keeps it in sync. Two non-obvious rules for the write side:
+
+- **Use `replaceState`, not `pushState`, for high-frequency writes** (slider drags, live filters). `pushState` adds a history entry per event and traps the Back button.
+- **`history.replaceState` / `pushState` do NOT fire `popstate`.** Only browser-driven navigation (Back/Forward, typed URL) fires it. So after writing, dispatch it yourself or the rest of the page never sees the change:
+
+```typescript
+const url = new URL(window.location.href)
+url.searchParams.set(paramName, String(value))
+window.history.replaceState({}, "", url.toString())
+// replaceState is silent — fire popstate so URL-bound consumers re-sync
+window.dispatchEvent(new PopStateEvent("popstate"))
+```
+
+The component also listens on `popstate` to re-read the param on Back/Forward and hydrate its own UI (clamp/validate — it's user-editable). Init state from props, not the URL, so SSR matches; do the first URL read in `useEffect`. This is **intra-page only** — it does not navigate, so it sidesteps the "cross-page nav is unreliable in published Framer" trap. It's the same idea as a custom-event state bus, but over the browser's native `popstate` channel, so Framer's own URL filters pick it up for free.
+
+### Styling Native Range Inputs `[C]`
+
+Framer offers no styling for native `<input type="range">`, and browsers paint their own blue track/thumb. To fully restyle:
+
+- `appearance: none` (+ `-webkit-appearance: none`) and `background: transparent` on the input.
+- Neutralise the track in **both** engines: `::-webkit-slider-runnable-track` **and** `::-moz-range-track`.
+- Re-draw the thumb in **both** `::-webkit-slider-thumb` and `::-moz-range-thumb` — `appearance:none` removes the native thumb too, so recreate it per engine.
+- Draw the visible track/fill as absolutely-positioned `<div>`s underneath; the transparent input sits on top.
+- Scope selectors with a className (`.rs-thumb`) inside the `<style>` tag — bare `input[type=range]` leaks to every range on the page.
+
+**Dual-thumb (two stacked inputs over one track):** set `pointer-events: none` on each *input* (so overlapping inputs don't block each other or the track) and `pointer-events: auto` on the *thumb pseudo-elements* only — just the thumbs stay grabbable. Enforce non-crossing in the `onChange` handlers (clamp each thumb against the other ± one step), not in the DOM.
+
 ### Common Patterns
 
 See [references/patterns.md](references/patterns.md) for shared state, keyboard detection, show-once logic, scroll effects, magnetic hover, animation triggers, mobile optimization, Safari SVG fix, loading-state scroll lock, easing curves with lerp animations.
@@ -478,55 +510,9 @@ See [references/patterns.md](references/patterns.md) for shared state, keyboard 
 
 ### HLS Video Streaming (`.m3u8`) `[C]`
 
-Chrome/Firefox do **not** natively support HLS streams. A plain `<video src="...m3u8">` will either fail or play the lowest quality rendition permanently. Safari handles HLS natively.
+Chrome/Firefox do **not** natively support HLS — a plain `<video src="...m3u8">` fails or plays the lowest rendition forever (Safari handles it natively). Fix: load HLS.js via dynamic import with silent fallback to native video.
 
-**Fix:** Use HLS.js via dynamic import with silent fallback:
-
-```typescript
-let HlsModule = null
-let hlsImportAttempted = false
-
-async function loadHls() {
-    if (hlsImportAttempted) return HlsModule
-    hlsImportAttempted = true
-    try {
-        const mod = await import("https://esm.sh/hls.js@1?external=react,react-dom")
-        HlsModule = mod.default || mod
-    } catch {
-        HlsModule = null // Fallback to native video
-    }
-    return HlsModule
-}
-
-function attachHls(videoEl, src) {
-    if (typeof window === "undefined") return null // SSR guard
-    const Hls = HlsModule
-    if (src.includes(".m3u8") && Hls?.isSupported()) {
-        const hls = new Hls({ startLevel: -1, capLevelToPlayerSize: true })
-        hls.loadSource(src)
-        hls.attachMedia(videoEl)
-        hls.on(Hls.Events.MANIFEST_PARSED, () => videoEl.play().catch(() => {}))
-        hls.on(Hls.Events.ERROR, (_, data) => {
-            if (data.fatal) {
-                data.type === Hls.ErrorTypes.NETWORK_ERROR
-                    ? hls.startLoad()
-                    : hls.destroy()
-            }
-        })
-        return hls
-    }
-    videoEl.src = src // MP4/webm or Safari native HLS
-    videoEl.play().catch(() => {})
-    return null
-}
-```
-
-**Key points:**
-- Dynamic import avoids breaking the component if CDN is unreachable
-- `capLevelToPlayerSize: true` prevents loading 4K for a 400px player
-- Must destroy HLS instances on cleanup to prevent memory leaks
-- Use `cancelled` flag in effects to prevent stale attachment after fast navigation
-- Works on Framer canvas and published site
+See [references/hls-video.md](references/hls-video.md) for the full `loadHls` / `attachHls` implementation and cleanup notes.
 
 ### WebGL in Framer `[C]`
 
