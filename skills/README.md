@@ -54,7 +54,7 @@ Build custom React components and Code Overrides in Framer. Sections are tagged 
 - Authoring — font handling (always spread the font object), `ControlType.Color` token unwrapping, full property-controls reference
 - Rendering & SSR — hydration safety with SSR-init trap, `RenderTarget` canvas vs preview detection, `startTransition` for concurrent rendering, NPM imports
 - CMS — variable-bound vs static text in overrides, CMS content timing, full CMS-in-code-components pattern (`useQueryData` + `findByFramerName`, plain-frame trap, canvas preview limitation)
-- Overrides — variant control without prop access, triggering Framer-attached handlers via React fiber traversal (e.g. URL deep link to an overlay)
+- Overrides — variant control without prop access, why an override produced by a factory won't appear in Framer's override picker (must be a literal export), triggering Framer-attached handlers via React fiber traversal (e.g. URL deep link to an overlay)
 - DOM & Performance — scroll detection constraint, `useRef` vs `useState` for live-read targets (`useScroll` etc.), React Portals for z-index stacking context, writing state into the URL to drive Framer's native filters, styling native range inputs (cross-engine thumbs, dual-thumb technique), common patterns library
 - Media — HLS video streaming (`.m3u8`) with dynamic HLS.js import, WebGL transparency and shader compilation
 - Debug — gated `console.log` via module-level `debugMode` flag

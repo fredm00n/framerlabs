@@ -17,6 +17,7 @@ Section tags: `[C]` applies to code components, `[O]` to code overrides, `[C/O]`
 | Dimensions stuck at 0 / SSR'd size persists | Initial state read from `window` already equals real value, `setState` no-ops | Init state to 0, flip in effect (see [Hydration Safety](#hydration-safety)) |
 | Color value crashes when user binds a token | `ControlType.Color` returns `{value: "#xxx"}` for tokens, string for static | Unwrap with `tok(v)` before use (see [Color Tokens](#color-tokens-controltypecolor-c)) |
 | Override props undefined | Expecting property controls | Overrides don't support `addPropertyControls` |
+| Override missing from Framer's picker dropdown | Export value is produced by *calling* a factory/HOC-generator — Framer's static scanner only recognizes literal override exports | Write each override as a literal `export function withX(Component)` or `export const withX = (Component) => …` (see [Overrides Must Be Literal Exports](#overrides-must-be-literal-exports-picker-detection-o)) |
 | Scroll animation broken | `overflow: scroll` on container | Use IntersectionObserver on viewport (see [Scroll Detection](#scroll-detection-constraint-co)) |
 | Scroll/animation silently stops working when target ID is set | `useScroll` target stored in `useState` captures null on first render | Use `useRef` for live-read targets (see [Live-Read Refs](#live-read-refs-useref-not-usestate-co)) |
 | Named CMS layer not found by `findByFramerName` | Layer is a dynamic component instance — name not on `data-framer-name` | Wrap dynamic component in a plain frame carrying the expected name |
@@ -86,6 +87,34 @@ export function withFeatureName(Component): ComponentType {
 ```
 
 Naming: Always use `withFeatureName` prefix.
+
+### Overrides Must Be Literal Exports (picker detection) `[O]`
+
+Framer's override picker **statically scans** the file and only lists exports it can syntactically recognize as an override — a literal `function` declaration or an arrow assigned directly to the export. An export whose value is the **return of a function call** is invisible to the scanner: it won't appear in the Override dropdown (even though it would work if referenced by name).
+
+This bites hardest when you try to DRY up several near-identical overrides with a factory:
+
+```typescript
+// ❌ BROKEN — factory hides the overrides from the picker.
+// Only literal functions in the file get listed; these three never appear.
+const setVariant = (name) => (Component) => (props) => {
+    const [, setStore] = useStore()
+    return <Component {...props} onClick={() => setStore({ variant: name })} />
+}
+export const withSetVariant1 = setVariant("Variant 1") // not listed
+export const withSetVariant2 = setVariant("Variant 2") // not listed
+export const withSetVariant3 = setVariant("Variant 3") // not listed
+
+// ✅ CORRECT — each override is a literal function; all are listed.
+export function withSetVariant1(Component): ComponentType {
+    return (props) => {
+        const [, setStore] = useStore()
+        return <Component {...props} onClick={() => setStore({ variant: "Variant 1" })} />
+    }
+}
+```
+
+Both literal forms are recognized: `export function withX(Component) {…}` **or** `export const withX = (Component) => (props) => …`. The rule: **never produce an override by calling a helper** — repeat the literal per override, even if it's more verbose. (Full worked example — 3 setters + 1 reader sharing a store — in [references/patterns.md](references/patterns.md) → *Shared State Between Overrides*.)
 
 ### Code Component Pattern `[C]`
 

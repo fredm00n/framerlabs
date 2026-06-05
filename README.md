@@ -28,6 +28,8 @@ Workarounds and tricks for Framer.
 
 ## Changelog
 
+**2026-06-05** — Skill: documented a subtle gotcha where factoring several similar overrides through a shared generator silently drops them from Framer's override picker, and how to keep them listed.
+
 **2026-06-04** — Skill: new sections on URL-driven filtering and styling range sliders, plus a tidy-up of the video streaming notes.
 
 **2026-05-25** — Skill refactor with new sections on CMS in code components, color tokens, live-read refs, SSR-safe state init, concurrent rendering, and gated debug logging. Reorganised into tagged sections with the pitfalls table moved to the top.

@@ -2,35 +2,52 @@
 
 ## Shared State Between Overrides
 
-Use Framer's store for state shared across multiple overrides:
+Use Framer's store for state shared across multiple overrides. **One file can hold every override** (the setters *and* the reader) — they share state because they all call the same module-level `useStore`. A separate store file is only needed when overrides in *different* code files must share the same store (then `export` the hook from its own file and import it in both).
+
+Worked example — three CTAs each set a component's active variant; a fourth override applies it:
 
 ```typescript
+import type { ComponentType } from "react"
 import { createStore } from "https://framer.com/m/framer/store.js@^1.0.0"
 
-const useStore = createStore({
-    variant: "default",
-    count: 0,
-})
+const useStore = createStore({ variant: "Variant 1" })
 
-export function withTrigger(Component): ComponentType {
+// Setters — apply one to each CTA. Keep them as LITERAL functions; a factory
+// would hide them from Framer's override picker (see warning below).
+export function withSetVariant1(Component): ComponentType {
     return (props) => {
-        const [store, setStore] = useStore()
-
-        const handleClick = () => {
-            setStore({ variant: "active" })
-        }
-
-        return <Component {...props} onClick={handleClick} />
+        const [, setStore] = useStore()
+        return <Component {...props} onClick={(e) => { props.onClick?.(e); setStore({ variant: "Variant 1" }) }} />
+    }
+}
+export function withSetVariant2(Component): ComponentType {
+    return (props) => {
+        const [, setStore] = useStore()
+        return <Component {...props} onClick={(e) => { props.onClick?.(e); setStore({ variant: "Variant 2" }) }} />
+    }
+}
+export function withSetVariant3(Component): ComponentType {
+    return (props) => {
+        const [, setStore] = useStore()
+        return <Component {...props} onClick={(e) => { props.onClick?.(e); setStore({ variant: "Variant 3" }) }} />
     }
 }
 
-export function withReactor(Component): ComponentType {
+// Reader — apply to the component that owns the variants.
+export function withVariant(Component): ComponentType {
     return (props) => {
         const [store] = useStore()
         return <Component {...props} variant={store.variant} />
     }
 }
 ```
+
+**Do not DRY the setters with a factory.** A `const withSetVariant1 = makeSetter("Variant 1")` will NOT surface in the override picker — Framer's scanner only recognizes literal override exports. Repeat the literal function per CTA. See SKILL.md → *Overrides Must Be Literal Exports (picker detection)*.
+
+Notes:
+- **Variant prop** is the variant's *name* as a string (`"Variant 1"`) and must match the panel exactly (case + spacing).
+- Compose `props.onClick?.(e)` so you don't clobber any click behaviour already on the CTA.
+- Reading variant names back *from* props is unreliable (may be hashed) — drive them from the store/state instead.
 
 ## Keyboard Sequence Detection
 
