@@ -7,7 +7,7 @@ Claude Code skills that teach Claude how to build Framer components and plugins.
 | Skill | Description |
 |-------|-------------|
 | [framer-code-components-overrides](framer-code-components-overrides/) | Code Components, Code Overrides, property controls, WebGL shaders, and common patterns |
-| [framer-plugins](framer-plugins/) | Framer Plugin SDK — ManagedCollection API, CMS sync, plugin modes, UI patterns, permissions, Marketplace submission |
+| [framer-plugins](framer-plugins/) | Framer Plugin SDK — plugin modes, canvas insertion + code files, CMS/ManagedCollection sync, permissions, licensing, Marketplace submission |
 
 ## Installation
 
@@ -78,13 +78,14 @@ framer-code-components-overrides/
 Build, debug, and modify Framer plugins using the Plugin SDK.
 
 **Topics covered:**
+- Starting a new plugin (scaffolder, picking modes, the duplicate-`id` cloning trap)
 - Plugin modes (canvas, CMS, image, collection)
-- Core `framer` API (UI management, canvas methods)
-- ManagedCollection API (fields, items, upsert behavior)
-- Field types and field data values
+- Core `framer` API (UI management, canvas insertion methods)
+- Canvas code files & hosted modules — `createCodeFile`, matching instances by stable identifier, cross-project module URLs
+- ManagedCollection API, field types, the silent-sync algorithm, slugs (in its own CMS reference)
 - Permissions system (`useIsAllowedTo`, `isAllowedTo`)
-- Data storage decision tree (localStorage vs pluginData)
-- CMS sync patterns from 32 official examples
+- Data storage decision tree (localStorage vs pluginData) and licensed-plugin project-remix handling
+- CMS sync patterns from official examples
 - Common pitfalls and workarounds
 - Marketplace submission workflow, listing asset specs, mandatory requirements, and pre-submission checklist
 
@@ -94,6 +95,7 @@ framer-plugins/
 ├── SKILL.md
 └── references/
     ├── api-reference.md
+    ├── cms-managed-collections.md   # CMS plugins: ManagedCollection, sync, field types, slugs
     ├── patterns.md
     ├── pitfalls.md
     └── marketplace.md

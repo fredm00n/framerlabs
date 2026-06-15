@@ -115,6 +115,36 @@ Unlike the regular `Collection` class, `ManagedCollection` only provides `getIte
 
 Per Framer's own docs: `pluginData` should NOT store sensitive data like API keys.
 
+### Licensed plugins & project remix
+
+When a Framer project is remixed, both `framer.setPluginData()` and `collection.setPluginData()` values carry over to the new project unchanged. Any license keys, API credentials, or project-bound state will appear valid in the remix.
+
+**Detection**: `framer.getProjectInfo()` returns `{ id: string, name: string }` where `id` is a hashed project ID unique to each project. Store this at activation time and compare on every load — a mismatch means the project was remixed.
+
+**Pattern for licensed plugins:**
+```typescript
+const { id: currentProjectId } = await framer.getProjectInfo()
+
+if (storedProjectId !== currentProjectId) {
+    // Remixed project — clear all stale credentials so new owner goes through fresh setup
+    if (framer.isAllowedTo("setPluginData")) {
+        await framer.setPluginData(PD_LICENSE_KEY, null)
+        await framer.setPluginData(PD_LICENSE_INSTANCE, null)
+        await framer.setPluginData(PD_LICENSE_PROJECT, null)
+        if (collection) {
+            for (const key of [PD_API_KEY, PD_CHANNEL_ID, ...]) {
+                await collection.setPluginData(key, null)
+            }
+        }
+    }
+    setLicenseActive(false)
+    setScreen("splash")
+    return
+}
+```
+
+Note: silently skip the clear if `isAllowedTo` is false — `licenseActive = false` is correct regardless, and the clear will succeed on the next load. If your license provider supports a per-activation label (e.g. LemonSqueezy's `instance_name`), pass the project ID into it for per-project dashboard visibility. Whichever provider you use (Polar, LemonSqueezy, a Val Town backend keyed on the Framer user ID, ...), wrap validation server-side — the plugin should never call the payment provider directly.
+
 ---
 
 ## Framer Environment

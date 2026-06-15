@@ -2,13 +2,15 @@
 name: framer-plugins
 description: >
   Framer Plugin SDK expert. Use when building, debugging, or modifying
-  Framer plugins. Covers ManagedCollection API, CMS sync, plugin modes,
-  UI patterns, permissions, data storage, and common pitfalls.
+  Framer plugins. Covers plugin modes, UI, permissions, data storage,
+  canvas insertion + code files, CMS/ManagedCollection sync, licensing,
+  marketplace submission, and common pitfalls.
 user-invocable: true
 license: MIT
 metadata:
   author: fredm00n
-  version: 1.0.0
+  version: 1.2.0
+  verifiedAgainst: framer-plugin@3.10.3
 ---
 
 # Framer Plugin Development Guide
@@ -23,6 +25,15 @@ You are an expert on the Framer Plugin SDK. Use this reference when building, de
 - **Base styles**: `import "framer-plugin/framer.css"`
 - **Core import**: `import { framer } from "framer-plugin"`
 - **Dev workflow**: `npm run dev` → Framer → Developer Tools → Development Plugin
+
+## Starting a New Plugin
+
+1. `npm create framer-plugin@latest` → scaffolds Vite + React + `framer.json` + a sample `App`.
+2. **Pick modes first** (see table below). CMS plugins need `configureManagedCollection` + `syncManagedCollection`; asset/insert plugins use `canvas` (or `image`/`editImage`).
+3. `import "framer-plugin/framer.css"` and call `framer.showUI(...)` in a `useLayoutEffect`.
+4. Decide storage early: `localStorage` for per-user secrets, `pluginData` for shared state (see the decision tree below).
+
+> **Cloning an existing plugin to start a new one?** Change `framer.json`'s `id` to a fresh hex value. A duplicate `id` makes Framer treat the two plugins as the *same* plugin — they share installation state, `localStorage` origin, and `pluginData` namespace, which silently cross-contaminates dev. The scaffolder generates a unique `id`; preserve that property when copying a repo.
 
 ## framer.json
 
@@ -88,85 +99,26 @@ framer.createManagedCollection()       // → Promise<ManagedCollection>
 ### Canvas Methods (canvas mode)
 
 ```typescript
-framer.addImage({ image, name, altText })
-framer.setImage({ image, name, altText })
+framer.addImage(image)                // NamedImageAssetInput | File → Promise<void>
+framer.setImage(image)                // sets on the current selection
 framer.getImage()
-framer.addText(text)
-framer.addFrame()
-framer.addSVG(svg, name)              // max 10kB
-framer.addComponentInstance({ url, attributes? })
+framer.addText(text, options?)
+framer.addSVG(svg)                     // SVGData; max 10kB
+framer.addComponentInstance({ url, attributes?, parentId? })  // → Promise<ComponentInstanceNode>
+framer.addDetachedComponentLayers({ url, layout, attributes? })  // → Promise<FrameNode> (inlines the layers)
 framer.getSelection()
 framer.subscribeToSelection(callback)
 ```
 
-## ManagedCollection API
+`addComponentInstance` resolves to the **created node** — keep it; you need its id for selection-aware replace/geometry-copy flows. `addImage`/`addSVG`/`addText` resolve to `void`.
 
-```typescript
-interface ManagedCollection {
-    id: string
-    getItemIds(): Promise<string[]>
-    setItemOrder(ids: string[]): Promise<void>
-    getFields(): Promise<ManagedCollectionField[]>
-    setFields(fields: ManagedCollectionFieldInput[]): Promise<void>
-    addItems(items: ManagedCollectionItemInput[]): Promise<void>   // upsert!
-    removeItems(ids: string[]): Promise<void>
-    setPluginData(key: string, value: string | null): Promise<void>
-    getPluginData(key: string): Promise<string | null>
-}
-```
+## CMS / ManagedCollection (pointer)
 
-**Critical**: `addItems()` is an **upsert** — it adds new items and updates existing ones matched by `id`.
+CMS plugins are their own world — the full surface (ManagedCollection API, field types, the silent-sync algorithm, user-editable fields, slug generation, field-data type wrappers, CMS pitfalls) lives in **[cms-managed-collections.md](references/cms-managed-collections.md)**. Read it when the plugin syncs an external data source into a Framer collection; skip it otherwise.
 
-### Field Types
-
-```
-"boolean" | "color" | "number" | "string" | "formattedText" |
-"image" | "file" | "link" | "date" | "enum" |
-"collectionReference" | "multiCollectionReference" | "array"
-```
-
-### Field Definition
-
-```typescript
-interface ManagedCollectionFieldInput {
-    id: string
-    name: string
-    type: CollectionFieldType
-    userEditable?: boolean        // default false for managed
-    cases?: { id, name }[]       // for "enum"
-    collectionId?: string         // for collection references
-    fields?: ManagedCollectionFieldInput[]  // for "array" (gallery)
-}
-```
-
-### Item Structure
-
-```typescript
-interface ManagedCollectionItemInput {
-    id: string
-    slug: string       // Must be unique, max 64 characters
-    draft: boolean
-    fieldData: Record<string, FieldDataEntryInput>
-}
-```
-
-### Field Data Values — MUST specify type explicitly
-
-```typescript
-{ type: "string", value: "hello" }
-{ type: "number", value: 42 }
-{ type: "boolean", value: true }
-{ type: "date", value: "2024-01-01T00:00:00Z" }   // ISO 8601
-{ type: "link", value: "https://example.com" }
-{ type: "image", value: "https://img.url" | null }
-{ type: "file", value: "https://file.url" | null }
-{ type: "color", value: "#FF0000" | null }
-{ type: "formattedText", value: "<p>hello</p>", contentType: "html" }
-{ type: "enum", value: "case-id" }
-{ type: "collectionReference", value: "item-id" }
-{ type: "multiCollectionReference", value: ["id1", "id2"] }
-{ type: "array", value: [{ id: "1", fieldData: { ... } }] }
-```
+Two things to carry even if you never open that file:
+- `ManagedCollection.addItems()` is an **upsert** (matched by `id`) — and there is **no `getItems()`**, only `getItemIds()`.
+- Every `fieldData` value needs an explicit type wrapper: `{ type: "string", value: "..." }`. Raw values are silently ignored.
 
 ## Permissions
 
@@ -198,8 +150,48 @@ const SYNC_METHODS = [
 | Project-level config | `framer.setPluginData()` | Shared, but 4kB total limit |
 
 - `pluginData`: 2kB per entry, 4kB total. Strings only. Pass `null` to delete.
-- `localStorage`: Sandboxed per-plugin origin. No size warnings.
-- `setPluginData()` triggers "Invoking protected message type" toast (SDK bug).
+- `pluginData` is **namespaced per plugin** — other plugins (and agent tooling like framer-dalton) cannot read or write your keys.
+- `localStorage`: Sandboxed per-plugin origin, persists across all projects, but per-browser/device — soft friction only, never enforcement.
+- `setPluginData()` (and other protected methods) surface an "Invoking protected message type" toast when called **without** a prior `framer.isAllowedTo()` check. It's the permission system, not a bug — gate the call and the toast disappears.
+
+### Licensed plugins & project remix
+
+`pluginData` is **copied verbatim when a project is remixed** — license keys and credentials carry into the new project and look valid. Detect the remix and clear stale credentials on load:
+
+```typescript
+const { id: currentProjectId } = await framer.getProjectInfo()
+if (storedProjectId !== currentProjectId) {
+    // Remixed → wipe credentials so the new owner does a fresh activation
+    if (framer.isAllowedTo("setPluginData")) {
+        await framer.setPluginData(PD_LICENSE_KEY, null)
+        // ... clear any other project-bound keys
+    }
+    setLicenseActive(false)
+}
+```
+
+Store the project ID at activation, compare every load; skip the clear silently if `isAllowedTo` is false (it retries next load). Full pattern + provider notes in [pitfalls.md](references/pitfalls.md#licensed-plugins--project-remix).
+
+## Code Files & Hosted Modules (canvas mode)
+
+Verified against framer-plugin v3 (Unicorn Studio plugin, 2026-06):
+
+```typescript
+framer.createCodeFile(name, code, { editViaPlugin?: boolean })
+// editViaPlugin: true → the file's "Edit Code" action opens this plugin instead of the editor
+framer.getCodeFiles()                 // → Promise<CodeFile[]>
+codeFile.setFileContent(code)         // new version; UPDATES already-inserted canvas instances in place
+codeFile.typecheck()                  // TS diagnostics without leaving the plugin
+codeFile.exports                      // [{ name, componentId, insertURL, type }]
+framer.addComponentInstance({ url })  // accepts insertURL or any module URL
+instance.setAttributes({ controls })  // rewrites property-control values in place, repeatable
+```
+
+- **Match canvas instances by `componentIdentifier`, never `insertURL`.** The identifier is stable across regenerations: `local-module:codeFile/{fileId}:{exportName}`. `insertURL` is version-pinned (`…/Name-hash.js@{versionId}`) and changes on every `setFileContent`.
+- Code files can import each other relatively (`./Engine.tsx`) or by **absolute module URL** — the build pipeline keeps URL imports live.
+- Every code file is publicly hosted at `https://framer.com/m/{Name}-{hash}.js[@version]` — **no auth, even from private projects**. Unpinned URLs track the latest save instantly (no publish step); pinned URLs are immutable and survive file deletion.
+- `addComponentInstance({ url })` with another project's module URL works: the identifier becomes `module:{moduleId}/{version}/{Name}.js:{export}` (match on the `module:{moduleId}/` prefix), **no code file appears in the consumer project**, and source updates surface as a manual "Update" button on the instance.
+- `@framerDisableUnlink` (comment annotation above the component) blocks Edit Code/unlink on shared/hosted components. It cannot hide a *local* code file — those are always visible and editable in Assets > Code.
 
 ## Key Exports from "framer-plugin"
 
@@ -217,26 +209,30 @@ import "framer-plugin/framer.css"
 
 For deeper information, see the companion files in this skill directory:
 
-- **[api-reference.md](references/api-reference.md)** — Complete API signatures and type definitions
-- **[patterns.md](references/patterns.md)** — Common plugin patterns extracted from 32 official examples
-- **[pitfalls.md](references/pitfalls.md)** — Known gotchas, workarounds, and debugging tips
-- **[marketplace.md](references/marketplace.md)** — Marketplace submission workflow, listing requirements, review process, plugin policies, and post-publication obligations
+- **[api-reference.md](references/api-reference.md)** — Full API signatures, node geometry, permission methods, type definitions
+- **[cms-managed-collections.md](references/cms-managed-collections.md)** — CMS plugins: ManagedCollection API, sync algorithm, field types, slugs, CMS pitfalls (skip for non-CMS plugins)
+- **[patterns.md](references/patterns.md)** — Cross-cutting patterns: auth (OAuth / API key), UI sizing, progress, resilience, menus, canvas insertion
+- **[pitfalls.md](references/pitfalls.md)** — Known gotchas, the project-remix/licensing pattern, debugging tips
+- **[marketplace.md](references/marketplace.md)** — Submission workflow, listing specs, review process, policies, post-publication obligations
 
 ## Key Rules
 
-1. Always check the project's `CLAUDE.md` for project-specific overrides and decisions
-16. **Before building any new feature**, check [marketplace.md](references/marketplace.md) — the plugin must comply with Framer's policies (English UI, light+dark mode, no ads, USD-only pricing, IP ownership, etc.) or it will be rejected during the ~3-week review process
-2. CMS plugins should attempt silent sync in `syncManagedCollection` mode before showing UI
-3. `addItems()` is upsert — no need to check for existing items before adding
-4. Field data values MUST include explicit `type` property: `{ type: "string", value: "..." }`
-5. Use `localStorage` for sensitive/user-specific data, `pluginData` for shared sync state
-6. Import `"framer-plugin/framer.css"` for standard Framer plugin styling
-7. Use `<div role="button">` instead of `<button>` to avoid Framer's CSS overrides
-8. Handle `FramerPluginClosedError` in catch blocks — ignore it silently
-9. Call `showUI` in `useLayoutEffect` to avoid flicker when resizing
-10. Always check permissions with `framer.isAllowedTo()` before sync operations
-11. Slugs must be unique and max 64 characters — append a unique ID suffix to title-based slugs
-12. Use `userEditable: true` on field definitions for fields users edit manually in the CMS
-13. Never include user-editable fields in `fieldData` during upsert — omitting them preserves user values
-14. Never remove-all + re-add during sync — only remove items no longer in the source to preserve user data
-15. `ManagedCollection` has no `getItems()` — you can only read item IDs, not field data
+**Always**
+1. Check the project's `CLAUDE.md` for project-specific overrides and decisions.
+2. Before building any new feature, check [marketplace.md](references/marketplace.md) — non-compliance (non-English UI, no light/dark mode, ads, non-USD pricing, IP issues) means rejection during the ~3-week review.
+3. Import `"framer-plugin/framer.css"` for native styling.
+4. Use `<div role="button">` instead of `<button>` to avoid Framer's CSS overrides.
+5. Handle `FramerPluginClosedError` in catch blocks — ignore it silently.
+6. Call `showUI` in `useLayoutEffect` to avoid resize flicker.
+7. Check `framer.isAllowedTo()` (synchronous, returns `boolean`) before any protected method.
+8. Use `localStorage` for per-user secrets, `pluginData` for shared state — and clear credentials on project-remix mismatch (see Licensed plugins above).
+
+**Canvas / code-file plugins**
+9. Match canvas instances by `componentIdentifier`, never `insertURL` (version-pinned, changes on every file save).
+10. Generated/managed code files should pass `{ editViaPlugin: true }` so "Edit Code" routes users back to the plugin.
+11. Don't render an in-UI titlebar — Framer's window chrome already shows the plugin name + close; a 1px `border-top` is enough separation.
+12. When cloning a plugin repo, give `framer.json` a fresh `id` (duplicate ids share state).
+
+**CMS plugins** — see [cms-managed-collections.md](references/cms-managed-collections.md) for detail:
+13. Attempt silent sync in `syncManagedCollection` mode before showing UI.
+14. `addItems()` is upsert; `fieldData` values need explicit `{ type, value }`; never remove-all + re-add; never include `userEditable` fields in `fieldData`.

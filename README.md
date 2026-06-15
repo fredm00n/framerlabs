@@ -9,7 +9,7 @@ Claude Code skills that teach Claude how to build Framer components and plugins.
 | Skill | Description |
 |-------|-------------|
 | [framer-code-components-overrides](skills/framer-code-components-overrides/) | Code Components, Code Overrides, property controls, WebGL shaders, and common patterns |
-| [framer-plugins](skills/framer-plugins/) | Framer Plugin SDK — ManagedCollection API, CMS sync, plugin modes, UI patterns, permissions, Marketplace submission |
+| [framer-plugins](skills/framer-plugins/) | Framer Plugin SDK — plugin modes, canvas insertion + code files, CMS/ManagedCollection sync, permissions, licensing, Marketplace submission |
 
 ## [Hacks](hacks/)
 
@@ -27,6 +27,8 @@ Workarounds and tricks for Framer.
 | [Overlay deep link from URL](hacks/Overlay%20deep%20link%20from%20URL.md) | Open a Framer overlay from a URL parameter via React fiber traversal |
 
 ## Changelog
+
+**2026-06-15** — framer-plugins skill: new coverage of inserting code files onto the canvas, handling licensed plugins across project remixes, and a dedicated CMS reference; verified against the latest plugin SDK.
 
 **2026-06-05** — Skill: documented a subtle gotcha where factoring several similar overrides through a shared generator silently drops them from Framer's override picker, and how to keep them listed.
 

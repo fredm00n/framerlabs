@@ -63,32 +63,56 @@ framer.createManagedCollection(): Promise<ManagedCollection>
 ### Canvas / Node Methods
 
 ```typescript
-framer.addImage(options: {
-    image: string        // URL
-    name?: string
-    altText?: string
-}): Promise<void>
-
-framer.setImage(options: {
-    image: string
-    name?: string
-    altText?: string
-}): Promise<void>
+// Verified against framer-plugin@3.10.3:
+framer.addImage(image: NamedImageAssetInput | File): Promise<void>
+framer.setImage(image: NamedImageAssetInput | File): Promise<void>   // sets on current selection
+framer.addImages(images: readonly NamedImageAssetInput[]): Promise<void>
+framer.uploadImage(image: NamedImageAssetInput | File): Promise<ImageAsset>  // upload without assigning
+// NamedImageAssetInput = { image: AssetInput; altText?: string; ... } — `image` is a URL/asset, not a plain string.
 
 framer.getImage(): Promise<{ image: string; altText?: string } | null>
 
-framer.addText(text: string): Promise<void>
-framer.addFrame(): Promise<void>
-framer.addSVG(svg: string, name?: string): Promise<void>  // max 10kB
+framer.addText(text: string, options?: AddTextOptions): Promise<void>
+framer.addSVG(svg: SVGData): Promise<void>                            // max 10kB
+
 framer.addComponentInstance(options: {
+    url: string                                          // insertURL or any module URL
+    attributes?: Partial<EditableComponentInstanceNodeAttributes>
+    parentId?: string
+}): Promise<ComponentInstanceNode>                       // resolves to the created node — keep the id
+
+framer.addDetachedComponentLayers(options: {
     url: string
-    attributes?: Record<string, unknown>
-}): Promise<void>
+    layout: ...
+    attributes?: ...
+}): Promise<FrameNode>                                   // inserts the component's layers inlined, not as an instance
 
 framer.getSelection(): Promise<Node[]>
 framer.subscribeToSelection(callback: (selection: Node[]) => void): () => void
 framer.subscribeToCanvasRoot(callback: (root: Node) => void): () => void
+
+// Tree + geometry (verified in framer-plugin v3, unicorn-studio plugin 2026-06):
+framer.getParent(nodeId): Promise<AnyNode | null>      // also node.getParent()
+framer.getChildren(nodeId): Promise<CanvasNode[]>
+framer.setParent(nodeId, parentId, index?): Promise<void>
+framer.getRect(nodeId): Promise<Rect | null>           // also node.getRect()
+framer.cloneNode(nodeId): Promise<AnyNode | null>
 ```
+
+`addComponentInstance`'s `attributes` accepts the full editable node attribute set
+(position + pins + size), so an instance can be placed/sized at insert time.
+
+**Node positional attributes** (readable on the node, writable via `setAttributes`):
+`position`, pins `top/right/bottom/left` (px), `centerX/centerY` (%), `width/height`
+(any length: px, %, fr), plus min/max constraints and `aspectRatio`.
+
+**Replace-an-instance-in-place pattern** (swap component, keep geometry): read old
+node's parent + sibling index (`getParent` + `getChildren().findIndex`), insert the
+new instance, `setParent(newId, parentId, oldIndex)`, then `setAttributes` copying
+`position`/pins/`centerX/Y`/`width`/`height` VERBATIM from the old node, then remove
+the old one. Copy attributes, not `getRect()` pixels: verbatim copy preserves
+percentage/fill sizing and stays correct inside stacks (pins are inert there — the
+sibling index IS the position).
 
 ### Project-Level Plugin Data
 
@@ -302,28 +326,37 @@ Use `framer.getActiveCollection()` for the `collection` mode.
 
 ---
 
-## ProtectedMethod — Known Values
+## ProtectedMethod — verified surface (framer-plugin@3.10.3)
+
+`ProtectedMethod` is `keyof methodToMessageTypes` — a large union. The names below are the real ones (verified against the installed `.d.ts`), grouped by area. This is a representative subset, not the whole union; when in doubt, let TypeScript narrow it (`satisfies ProtectedMethod[]`).
 
 ```typescript
 type ProtectedMethod =
-    // ManagedCollection
-    | "ManagedCollection.addItems"
-    | "ManagedCollection.removeItems"
-    | "ManagedCollection.setFields"
-    | "ManagedCollection.setPluginData"
-    // Collection (non-managed)
-    | "Collection.addItems"
-    | "Collection.addFields"
-    | "Collection.removeFields"
+    // Canvas insertion (bare names — these ARE valid protected strings)
+    | "addImage" | "addImages" | "setImage" | "addSVG" | "addText"
+    | "addComponentInstance" | "addDetachedComponentLayers"
+    | "uploadImage" | "uploadImages" | "uploadFile" | "uploadFiles"
     // Nodes
-    | "Node.setAttributes"
-    // Canvas
-    | "addImage"
-    | "setImage"
-    | "addText"
+    | "Node.setAttributes" | "Node.remove" | "Node.clone" | "Node.setPluginData"
+    // ManagedCollection
+    | "ManagedCollection.setFields" | "ManagedCollection.addItems"
+    | "ManagedCollection.removeItems" | "ManagedCollection.setItemOrder"
+    | "ManagedCollection.setPluginData" | "ManagedCollection.setAsActive"
+    // Collection (non-managed) + items + fields
+    | "Collection.addItems" | "Collection.removeItems" | "Collection.addFields"
+    | "Collection.removeFields" | "Collection.setItemOrder" | "Collection.setFieldOrder"
+    | "Collection.setPluginData" | "Collection.setAsActive"
+    | "CollectionItem.setAttributes" | "CollectionItem.remove" | "CollectionItem.setPluginData"
+    | "Field.remove" | "Field.setAttributes" | "EnumField.addCase" | "EnumField.setCaseOrder"
+    // Top-level creators / styles
+    | "createCollection" | "createManagedCollection"
+    | "createColorStyle" | "createTextStyle"
+    // ...and more (TextNode.*, ColorStyle.*, TextStyle.*, WebPageNode.*, EnumCase.*)
 ```
 
-"Get" methods (getItemIds, getFields, getPluginData, etc.) do NOT require permission checks.
+**"Get" methods are unprotected** and never need a check: `getItemIds`, `getFields`, `getPluginData`, `getSelection`, `getParent`, `getChildren`, `getRect`, `getProjectInfo`, `getCurrentUser`, `getCodeFiles`, `showUI`, `hideUI`, `notify`, etc.
+
+> Note the asymmetry: the canvas `add*`/`upload*` methods use **bare** names (`"addImage"`), while collection/node methods use **namespaced** names (`"ManagedCollection.addItems"`, `"Node.setAttributes"`). Match exactly — `"Collection.addImage"` is not a thing.
 
 ---
 
