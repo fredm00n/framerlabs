@@ -6,7 +6,7 @@ Cross-cutting patterns drawn from the official example plugins in [framer/plugin
 ## Permission Check Pattern
 
 ```typescript
-import { framer, type ProtectedMethod } from "framer-plugin"
+import { framer, type ProtectedMethod } from "@framer/plugin"
 
 export const METHODS = [
     "ManagedCollection.setFields",
@@ -21,7 +21,7 @@ if (!framer.isAllowedTo(...METHODS)) {
 }
 
 // Reactive (in React components):
-import { useIsAllowedTo } from "framer-plugin"
+import { useIsAllowedTo } from "@framer/plugin"
 const canRun = useIsAllowedTo(...METHODS)
 <div role="button" aria-disabled={!canRun} onClick={canRun ? handleRun : undefined}>Run</div>
 ```
@@ -193,6 +193,34 @@ if (errors.length > 0) {
 
 ---
 
+## Pacing Rate-Limited Syncs
+
+A full sync of a large external dataset can burst its API into `429`s — and bursting then retrying
+just re-empties the rate-limit bucket. Hold a steady rate with a **shared** limiter across all workers
+(not per-request), and pause the whole pool when throttled so the limit refills:
+
+```typescript
+// One pacer shared by every worker → controls the *aggregate* request rate.
+function createPacer(intervalMs: number) {
+    let nextSlot = 0, cooldownUntil = 0
+    return {
+        async slot() {
+            const start = Math.max(Date.now(), nextSlot, cooldownUntil)
+            nextSlot = start + intervalMs
+            const wait = start - Date.now()
+            if (wait > 0) await new Promise(r => setTimeout(r, wait))
+        },
+        throttle(ms: number) { cooldownUntil = Math.max(cooldownUntil, Date.now() + ms) },
+    }
+}
+```
+
+- Set the interval *at or just under* the API's sustainable rate — measure it (e.g. how many requests succeed before the first `429`).
+- Leave failed items **unrecorded** in delta state so the next sync retries them; surface a "N couldn't load, run again" notice.
+- Keep worker concurrency low — it's just latency hiding; the shared pacer controls the real rate.
+
+---
+
 ## Menu Integration
 
 Add context menu items to the plugin:
@@ -216,7 +244,7 @@ framer.setMenu([
 For plugins that insert assets onto the canvas:
 
 ```typescript
-// Mode-dependent behavior (framer-plugin@3.10.3 signatures)
+// Mode-dependent behavior (@framer/plugin@4.0.1 signatures)
 if (framer.mode === "canvas") {
     await framer.addImage({ image: url, altText })   // NamedImageAssetInput | File
 } else {
@@ -226,7 +254,7 @@ if (framer.mode === "canvas") {
 }
 
 // Drag-and-drop support
-import { Draggable } from "framer-plugin"
+import { Draggable } from "@framer/plugin"
 <Draggable data={{ type: "image", image: fullUrl, previewImage: thumbUrl, name, altText }}>
     <div className="image-card">...</div>
 </Draggable>

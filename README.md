@@ -28,6 +28,8 @@ Workarounds and tricks for Framer.
 
 ## Changelog
 
+**2026-07-13** — framer-plugins skill: big update for the renamed v4 plugin SDK, first-hand guidance on the Marketplace's automated code review and how to pass it (permission checks, shipping your source files), submission gotchas, and licensing advice for paid plugins; fact-checked against the live Framer docs.
+
 **2026-06-15** — framer-plugins skill: new coverage of inserting code files onto the canvas, handling licensed plugins across project remixes, and a dedicated CMS reference; verified against the latest plugin SDK.
 
 **2026-06-05** — Skill: documented a subtle gotcha where factoring several similar overrides through a shared generator silently drops them from Framer's override picker, and how to keep them listed.

@@ -8,6 +8,11 @@ other non-CMS plugins. For the general SDK, see [SKILL.md](../SKILL.md) and
 A CMS plugin declares both `configureManagedCollection` (first-time setup / field
 mapping) and `syncManagedCollection` (re-sync existing collection) modes in `framer.json`.
 
+> Use `framer.getActiveManagedCollection()` — `framer.getManagedCollection()` (singular) is
+> `@deprecated`. `getManagedCollections()` (plural) is still current. Plugins 3.0 (Mar 2025)
+> lets plugins access ALL Collections (not just plugin-managed ones), write to unmanaged
+> collections, and call `framer.createManagedCollection()`.
+
 ---
 
 ## ManagedCollection interface
@@ -41,8 +46,11 @@ interface ManagedCollection {
 
 **Critical constraints**
 - `addItems()` is an **upsert** — adds new items and updates existing ones matched by `id`. No need to check existence first.
-- `ManagedCollection` has **no `getItems()`** — only `getItemIds()`. You can read item IDs, never existing field data. Design sync logic around this.
+- `addItems()` is **atomic per batch** — one rejected value fails the *whole* call. On batch failure, fall back to per-item `addItems([item])` and skip the ones that still fail (report a count) so one bad asset can't abort the sync.
+- `ManagedCollection` has **no `getItems()`** — only `getItemIds()`. You can read item IDs, never existing field data. Design sync logic around this. (Contrast: **non-managed `Collection` DOES have `getItems()`** returning full `CollectionItem[]` with `fieldData` — reading user collections is fine, it's only plugin-managed data you can't read back. `getPluginDataKeys()` also exists on framer/collections/nodes.)
+- **Field `id`s max 64 characters** (documented). Slugs also cap at 64 in practice (observed; the docs state the limit for field ids only).
 - `setFields()` replaces the **whole** schema; data for any field you drop is lost.
+- **`image` fields ingest URLs server-side and 500 on very large originals** (e.g. multi-megapixel camera shots). Cap external image URLs (~≤1456px, via the source CDN's resize transform) before writing — Framer rejects the oversized ingest, not your field definition.
 
 ---
 
@@ -133,7 +141,7 @@ interface ArrayItemInput {
 ## CMS permissions
 
 ```typescript
-import { framer, type ProtectedMethod } from "framer-plugin"
+import { framer, type ProtectedMethod } from "@framer/plugin"
 
 export const SYNC_METHODS = [
     "ManagedCollection.setFields",
@@ -148,7 +156,7 @@ if (!framer.isAllowedTo(...SYNC_METHODS)) {
 }
 
 // In React components (reactive):
-import { useIsAllowedTo } from "framer-plugin"
+import { useIsAllowedTo } from "@framer/plugin"
 const canSync = useIsAllowedTo(...SYNC_METHODS)
 <div role="button" aria-disabled={!canSync} onClick={canSync ? handleSync : undefined}>Sync</div>
 ```
@@ -162,8 +170,8 @@ const canSync = useIsAllowedTo(...SYNC_METHODS)
 Every official CMS plugin follows this shape: in `syncManagedCollection` mode, attempt a **silent sync and close** — only show UI when there's no stored config or sync fails. This is the single most important CMS pattern.
 
 ```typescript
-import { framer } from "framer-plugin"
-import "framer-plugin/framer.css"
+import { framer } from "@framer/plugin"
+import "@framer/plugin/framer.css"
 
 const collection = await framer.getActiveManagedCollection()
 const previousSourceId = await collection.getPluginData("sourceId")
@@ -326,7 +334,6 @@ await collection.setPluginData(PLUGIN_KEYS.LAST_SYNCED, lastSyncedIso)  // compu
 const previousSourceId = await collection.getPluginData(PLUGIN_KEYS.SOURCE_ID)
 ```
 
-> Backend note: `new Date().toISOString()` is fine in plugin (browser) code. If a Val Town backend produces the timestamp instead, `Date.now()`/argless `new Date()` are unavailable in **Workflow scripts** there — stamp the time outside the script or in an HTTP handler.
 
 ---
 

@@ -13,7 +13,7 @@ Framer's built-in CSS has high specificity on `<button>` elements. Custom backgr
 - Use high-specificity selectors: `.parent .child.active { background: red !important; }`
 
 ### framer.css conflicts
-Importing `"framer-plugin/framer.css"` provides Framer's base styles (fonts, colors, input styling), but can conflict with custom CSS. The import is optional but recommended for a native look.
+Importing `"@framer/plugin/framer.css"` provides Framer's base styles (fonts, colors, input styling), but can conflict with custom CSS. The import is optional but recommended for a native look. v4 (Framer 3.0) updated framer.css to the 3.0 styles (new Inter character alternates, selection colors, input element styles). New optional export: `import "@framer/plugin/inter.css"` loads Inter without framer.css.
 
 ### showUI flicker
 Calling `framer.showUI()` in a `useEffect` causes a visible resize flicker. Always use `useLayoutEffect`:
@@ -26,6 +26,12 @@ useLayoutEffect(() => {
 
 ### SVG icon centering
 Icons in `framer.json` must use a 30×30 viewBox. Paths drawn at absolute coordinates can end up outside the visible area. Use `<g transform="translate(15 15)">` with centered path coordinates.
+
+### framer.css sets `body { line-height: 1.5 }` — measure gaps against it
+Spacing that looks mathematically right from bare-CSS reasoning renders wrong because `@framer/plugin/framer.css` sets a 1.5 body line-height that inflates text boxes. When a vertical gap looks bigger than the CSS says, check the computed line box before touching margins.
+
+### Flex items wrapping a sized canvas need `min-height: 0`
+A flex child containing a fixed-size `<canvas>` (or any intrinsically-sized content) won't shrink below the content's size without `min-height: 0` (or `min-width: 0` on the row axis) — the canvas silently forces the layout open.
 
 ### `display:none` retriggers CSS `@keyframes` animations
 When a hidden element (e.g., a tab toggled via `display:none`) becomes visible again, browsers replay all CSS `@keyframes` animations on it. This causes completion icons, fade-ins, and other one-shot animations to replay every time the user switches tabs.
@@ -100,8 +106,8 @@ Unlike the regular `Collection` class, `ManagedCollection` only provides `getIte
 - `collection.setPluginData()`: 2kB per entry, 4kB per collection
 - Values must be strings. Pass `null` to delete a key.
 
-### localStorage is sandboxed
-`localStorage` is sandboxed per-plugin origin and per-user. It's safe for API keys and tokens. It's synchronous (no async needed) and has no Framer-imposed size limits.
+### localStorage is sandboxed — but not durable
+`localStorage` is sandboxed per-plugin origin and per-user, synchronous, and has no Framer-imposed size limits — the right place for secrets like API keys (pluginData is collaborator-readable). **But it is not durable storage**: the plugin runs in a cross-origin iframe, so the value is per-browser/per-device, lost on cache/site-data clear, and can be evicted by browser anti-tracking (Safari ITP evicts script-writable storage after ~7 days without a first-party visit). Design for re-entry: only store what you can re-prompt for, tell the user keys are device-local, and **never** put a license key here — keep licenses in project-level `framer.setPluginData()` so they survive across devices and cache clears (or better, keep license state entirely server-side keyed on `framer.getCurrentUser().id` — see "Licensed plugins & project remix" below).
 
 ### When to use which storage
 
@@ -144,6 +150,10 @@ if (storedProjectId !== currentProjectId) {
 ```
 
 Note: silently skip the clear if `isAllowedTo` is false — `licenseActive = false` is correct regardless, and the clear will succeed on the next load. If your license provider supports a per-activation label (e.g. LemonSqueezy's `instance_name`), pass the project ID into it for per-project dashboard visibility. Whichever provider you use (Polar, LemonSqueezy, a Val Town backend keyed on the Framer user ID, ...), wrap validation server-side — the plugin should never call the payment provider directly.
+
+**Backend-relayed validation is a per-load hard dependency** — decide its failure mode deliberately. Fail-closed (treat as unlicensed when the backend is unreachable) is safest against piracy but downgrades paying users during an outage or a serverless cold-start. Mitigate by caching the last-valid result (in project `framer.setPluginData()`) for an offline grace period. Also: store the license key in project-level pluginData, **not** the activation logic — keep the activation instance label (e.g. LemonSqueezy `instance_name` = project ID) so "1 activation per project" still holds after the move to a backend.
+
+**Strongest model — fully server-side, keyed on the Framer account (shipped in production 2026-07):** skip client-side license state entirely. `framer.getCurrentUser().id` is a 64-char hex id, stable per account across projects, devices, and browsers — the backend maps it to entitlement (`activate` once: user id + license key → provider; `status` on every open, throttled, fail-open on provider outages / fail-closed on activation). The client stores nothing but an optional non-authoritative localStorage hint to avoid a free-tier flash at boot. This makes the remix problem vanish (nothing project-bound to carry over), keeps every commercial identifier out of the bundle (the marketplace reviewer greps for those), and licensing survives cache clears. Per-seat limits delegate to the provider's activation limits (one activation consumed per Framer account). The tradeoff: the plugin needs a backend and gates entitlement-granting content server-side (serve the paid payload only to entitled user ids — client-side flags alone are trivially bypassed).
 
 ---
 

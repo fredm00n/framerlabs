@@ -83,11 +83,11 @@ Build, debug, and modify Framer plugins using the Plugin SDK.
 - Core `framer` API (UI management, canvas insertion methods)
 - Canvas code files & hosted modules — `createCodeFile`, matching instances by stable identifier, cross-project module URLs
 - ManagedCollection API, field types, the silent-sync algorithm, slugs (in its own CMS reference)
-- Permissions system (`useIsAllowedTo`, `isAllowedTo`)
-- Data storage decision tree (localStorage vs pluginData) and licensed-plugin project-remix handling
+- Permissions system (`useIsAllowedTo`, `isAllowedTo`) and the permission-gating contract the Marketplace's automated code review expects
+- Data storage decision tree (localStorage vs pluginData), licensed-plugin project-remix handling, and server-side licensing keyed on the Framer user id
 - CMS sync patterns from official examples
 - Common pitfalls and workarounds
-- Marketplace submission workflow, listing asset specs, mandatory requirements, and pre-submission checklist
+- Marketplace submission: workflow, listing asset specs, how the automated post-publication review works (shipping sources, greppable permission guards), submission identity gotchas (manifest ids, name collisions), and a pre-submission checklist
 
 **File structure:**
 ```
