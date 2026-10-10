@@ -4,7 +4,7 @@ A collection of resources for working with Framer.
 
 ## [Skills](skills/)
 
-Claude Code skills that teach Claude how to build Framer sites, components and plugins. See [skills/README.md](skills/README.md) for installation instructions and detailed coverage.
+Agent skills that teach AI coding agents how to build Framer sites, components and plugins. See [skills/README.md](skills/README.md) for installation instructions and detailed coverage.
 
 | Skill | Description |
 |-------|-------------|
@@ -30,7 +30,7 @@ Workarounds and tricks for Framer.
 ## Changelog
 
 **2026-10-10**
-- New framer-agent-playbook skill: what Claude should know before building or editing a Framer site through Framer Agent, from the deletes that can't be undone to calls that report success and do nothing, layouts that break on tablet and phone, and safe habits for live client sites; checked against Framer's own agent docs so it only covers what they leave out.
+- New framer-agent-playbook skill: what an AI agent should know before building or editing a Framer site through Framer Agent, from the deletes that can't be undone to calls that report success and do nothing, layouts that break on tablet and phone, and safe habits for live client sites; checked against Framer's own agent docs so it only covers what they leave out.
 - framer-code-components-overrides skill: new notes on overrides that stop working after a publish, native Framer forms, showing new CMS items without a reload, and why CMS data is never private.
 - framer-plugins skill: fixed a broken link.
 

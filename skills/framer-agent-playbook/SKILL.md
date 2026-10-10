@@ -73,7 +73,7 @@ Full detail: [`references/destructive-operations.md`](references/destructive-ope
   `minHeight` or `height: 1fr` (dead space once a grid drops to one column).
 - **`getRect`, canvas screenshots and lint spacing warnings lie.** Verify on the published page,
   in a real browser.
-- **`publish` can be gated** by Claude Code's auto-mode classifier, even a preview publish. Publish
+- **`publish` can be blocked** by the agent's own permission checks, even a preview publish. Publish
   from the editor or an interactive session, and only when the user asks.
 
 ## Where to look, by task

@@ -1,6 +1,6 @@
 # Framer Labs Skills
 
-Claude Code skills that teach Claude how to build Framer sites, components and plugins. Install these to get better AI assistance when working on Framer projects.
+Agent skills that teach AI coding agents how to build Framer sites, components and plugins. Install these to get better AI assistance when working on Framer projects.
 
 ## Available Skills
 
