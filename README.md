@@ -4,11 +4,12 @@ A collection of resources for working with Framer.
 
 ## [Skills](skills/)
 
-Claude Code skills that teach Claude how to build Framer components and plugins. See [skills/README.md](skills/README.md) for installation instructions and detailed coverage.
+Claude Code skills that teach Claude how to build Framer sites, components and plugins. See [skills/README.md](skills/README.md) for installation instructions and detailed coverage.
 
 | Skill | Description |
 |-------|-------------|
 | [framer-code-components-overrides](skills/framer-code-components-overrides/) | Code Components, Code Overrides, property controls, WebGL shaders, and common patterns |
+| [framer-agent-playbook](skills/framer-agent-playbook/) | Building and editing Framer sites through Framer Agent — what can't be undone, DSL and API traps, breakpoints, CMS, forms, and working safely in live client sites |
 | [framer-plugins](skills/framer-plugins/) | Framer Plugin SDK — plugin modes, canvas insertion + code files, CMS/ManagedCollection sync, permissions, licensing, Marketplace submission |
 
 ## [Hacks](hacks/)
@@ -27,6 +28,11 @@ Workarounds and tricks for Framer.
 | [Overlay deep link from URL](hacks/Overlay%20deep%20link%20from%20URL.md) | Open a Framer overlay from a URL parameter via React fiber traversal |
 
 ## Changelog
+
+**2026-10-10**
+- New framer-agent-playbook skill: what Claude should know before building or editing a Framer site through Framer Agent, from the deletes that can't be undone to calls that report success and do nothing, layouts that break on tablet and phone, and safe habits for live client sites; checked against Framer's own agent docs so it only covers what they leave out.
+- framer-code-components-overrides skill: new notes on overrides that stop working after a publish, native Framer forms, showing new CMS items without a reload, and why CMS data is never private.
+- framer-plugins skill: fixed a broken link.
 
 **2026-07-13** — framer-plugins skill: big update for the renamed v4 plugin SDK, first-hand guidance on the Marketplace's automated code review and how to pass it (permission checks, shipping your source files), submission gotchas, and licensing advice for paid plugins; fact-checked against the live Framer docs.
 
