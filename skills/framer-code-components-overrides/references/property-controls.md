@@ -243,6 +243,19 @@ advancedSetting: {
 },
 ```
 
+### Separator lines
+
+A control whose `description` is exactly `"---"` renders as a horizontal rule in the property panel.
+Use it to break a long panel into groups without adding a fake control.
+
+```typescript
+divider: {
+    type: ControlType.Boolean,
+    title: " ",
+    description: "---",
+},
+```
+
 ## Markdown Descriptions
 
 ```typescript

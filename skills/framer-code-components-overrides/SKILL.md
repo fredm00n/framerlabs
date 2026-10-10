@@ -14,7 +14,10 @@ Section tags: `[C]` applies to code components, `[O]` to code overrides, `[C/O]`
 | Variable text not found in override | Reading only `props.children` | Check `props.text` first — variable-bound text bypasses children |
 | Font styles not applying | Accessing font props individually | Spread entire font object: `...props.font` |
 | Hydration mismatch | Browser API in render | Use `isClient` state pattern |
+| Hydration error #425 at `style`, and SSR CSS with `>` selectors or quoted attribute values never applies | React 18's server renderer escapes `<style>{css}</style>` text, so `>` ships as `&gt;` and `"` as `&quot;` | Render `<style dangerouslySetInnerHTML={{ __html: css }} />` |
 | Dimensions stuck at 0 / SSR'd size persists | Initial state read from `window` already equals real value, `setState` no-ops | Init state to 0, flip in effect (see [Hydration Safety](#hydration-safety)) |
+| Override finds no element after a later publish, with no error and no code change | It queried its own element by a React `useId()`; when hydration differs from the server render, the DOM keeps the server's id | Make the id in the browser after mount, or use a ref (see [Ids That Link Elements](#ids-that-link-elements-co)) |
+| Child has no width, `offsetLeft` or `offsetParent`; `scroll-snap-align` on it is ignored | Framer wrapped each child of the frame in a `display: contents` element | Step to the first descendant with a box, measure with `getBoundingClientRect` (see [Measuring a Frame's Children](#measuring-a-frames-children-o)) |
 | Color value crashes when user binds a token | `ControlType.Color` returns `{value: "#xxx"}` for tokens, string for static | Unwrap with `tok(v)` before use (see [Color Tokens](#color-tokens-controltypecolor-c)) |
 | Override props undefined | Expecting property controls | Overrides don't support `addPropertyControls` |
 | Override missing from Framer's picker dropdown | Export value is produced by *calling* a factory/HOC-generator — Framer's static scanner only recognizes literal override exports | Write each override as a literal `export function withX(Component)` or `export const withX = (Component) => …` (see [Overrides Must Be Literal Exports](#overrides-must-be-literal-exports-picker-detection-o)) |
@@ -31,15 +34,20 @@ Section tags: `[C]` applies to code components, `[O]` to code overrides, `[C/O]`
 | URL-bound filters don't react to a programmatic URL write | `replaceState`/`pushState` don't fire `popstate` | Dispatch it manually after writing (see [Writing State into the URL](#writing-state-into-the-url-c)) |
 | Slider drag floods browser history / traps Back | `pushState` on every `onChange` | Use `replaceState` for high-frequency writes |
 | Range input shows blue native fill / unstyleable thumb | Native `<input type="range">` chrome | `appearance:none` + neutralise track + custom thumb per engine (see [Styling Native Range Inputs](#styling-native-range-inputs-c)) |
+| Override-wired button ignores Enter and Space | `onTap` is a pointer gesture; keyboard and `.click()` never fire it | Pass `onClick` to the instance (see [Component Instances](#component-instances-onclick-variant-scoped-css-o)) |
+| DOM added by an override vanishes, or React throws `insertBefore` / `removeChild` errors | The override replaced or edited children React owns | Insert siblings next to React's nodes, never replace them (see [Inserting DOM Next to React's Nodes](#inserting-dom-next-to-reacts-nodes-o)) |
+| Hidden form value arrives empty | Value written after Framer read the form, or the input was injected by code | Native hidden input, filled in a capture-phase `submit` listener (see [Framer Forms](#framer-forms-o)) |
+| New CMS item only shows after a reload | CMS content is baked into each published deployment | Re-fetch the page and insert the new cards (see [Refreshing Published CMS Content](#refreshing-published-cms-content-in-place-o)) |
+| "Private" CMS field readable by anyone | Framer publishes every field of every item in `.framercms` files | Keep private data out of the CMS (see [CMS Data Is Public](#cms-data-is-public-co)) |
 
 ## Contents
 
 - [Foundations](#foundations) — components vs overrides, annotations, starter templates
 - [Authoring](#authoring) — property controls, fonts, color tokens
 - [Rendering & SSR](#rendering--ssr) — hydration, canvas detection, concurrent rendering, npm imports
-- [CMS](#cms) — text timing in overrides, code-component CMS pattern
-- [Overrides — specific patterns](#overrides--specific-patterns) — variant control, fiber handlers
-- [DOM & Performance](#dom--performance) — scroll detection, live-read refs, portals, common patterns
+- [CMS](#cms) — text timing in overrides, code-component CMS pattern, what the CMS makes public
+- [Overrides — specific patterns](#overrides--specific-patterns) — variant control, fiber handlers, component instances, Framer forms
+- [DOM & Performance](#dom--performance) — scroll detection, live-read refs, portals, inserting next to React, live CMS refresh, common patterns
 - [Media](#media) — HLS video, WebGL
 - [Debug](#debug) — gated logging
 
@@ -259,6 +267,28 @@ useEffect(() => {
 
 Pairing the `> 0` opacity gate with the flip-in-effect hides the first paint, otherwise you see a flash from 0/default → real size on refresh.
 
+### Ids That Link Elements `[C/O]`
+
+Never link elements through a React-generated id (`useId()`), for example an override that finds its own element with `document.querySelector('[data-x="' + useId() + '"]')`. When a published page hydrates with a tree that differs from the server render, the DOM keeps the server's id while the client code looks for its own. The lookup returns null, nothing throws, and controls that worked on one publish are dead on the next.
+
+Use a ref when the target forwards refs. Otherwise make the id in the browser after mount and render the attribute only once it exists:
+
+```typescript
+function useClientId() {
+    const [id, setId] = useState<string | null>(null)
+    useEffect(() => {
+        setId("x-" + Math.random().toString(36).slice(2, 10))
+    }, [])
+    return id
+}
+
+const id = useClientId()
+<Component {...props} {...(id ? { "data-x": id } : {})} />
+// every lookup returns early while id is null
+```
+
+After any publish or code change, retest every interactive element on the page, not only the one you edited: this kind of break shows up in code nobody touched.
+
 ### Canvas vs Preview Detection `[C/O]`
 
 ```typescript
@@ -386,6 +416,19 @@ Code components consume a Framer CMS Collection List via a `ControlType.Componen
 
 Full pattern, helper code, and traps: see [references/cms.md](references/cms.md).
 
+### CMS Data Is Public `[C/O]`
+
+A published page's HTML carries only the fields a page binds, but Framer also publishes every
+collection as `.framercms` data files on `framerusercontent.com/cms/...`, holding **every field of
+every item**. Load-more pagination and other runtime reads fetch them, and anyone can download
+them. A field no page shows (an email, an internal note) is still public, and files from older
+deployments stay online after the field is deleted.
+
+- Never store private data in Framer CMS, whether it arrives from a form, a plugin or the server API.
+- An override that gates CMS content hides it on screen only; the data is still in the files.
+- Private or per-user data belongs in an external store read at runtime (Supabase with row-level
+  security, for example), not in the CMS.
+
 ---
 
 ## Overrides — Specific Patterns
@@ -417,6 +460,68 @@ onTap?.({} as any, {} as any)
 ```
 
 Full helper, debugging snippets, deep-link use case, and maintenance risks: see [references/fiber-handlers.md](references/fiber-handlers.md).
+
+### Component Instances: `onClick`, `variant`, Scoped CSS `[O]`
+
+An override on a canvas component instance can drive it from code:
+
+```typescript
+export function withRefreshButton(Component): ComponentType {
+    return (props) => {
+        const [loading, setLoading] = useState(false)
+        return (
+            <Component
+                {...props}
+                variant={loading ? "Loading" : "Default"} // variant *name* from the canvas
+                onClick={() => run(setLoading)}         // onClick, not onTap
+                aria-label="Refresh"
+            />
+        )
+    }
+}
+```
+
+- **Use `onClick`, not `onTap`.** Both reach the instance's root, but `onTap` is a pointer gesture:
+  Enter and Space on the focused element, and a scripted `.click()`, never fire it.
+- **`variant` takes the variant's name**, so a code-driven state (loading, active) reuses variants
+  designed on the canvas.
+- **A loading state tied to a looping animation should end on a whole loop.** If an icon spins at
+  one turn per second, keep the Loading variant for `max(1, ceil(elapsed / 1000))` seconds; a
+  request that finishes in 300 ms otherwise snaps the icon back mid-turn.
+- **Built-in components without style controls** (the pagination "Load More" button, for one) can
+  be restyled from any override by injecting a `<style>` scoped to
+  `[data-framer-name="<instance name>"]`. Name the instance on the canvas first; layer names survive
+  publishing, generated `.framer-*` classes do not.
+
+### Framer Forms `[O]`
+
+How a native Framer form submits, from a form that posts to a webhook:
+
+- The browser posts to `api.framer.com/forms/v1/forms/<id>/submit` with the global `fetch`, adding a
+  proof-of-work header. The form also renders its own hidden honeypot inputs.
+- **The Success variant shows as soon as Framer stores the submission**, before any webhook or
+  email destination runs. The page never learns whether the webhook accepted it; if visitors need
+  that, the webhook has to expose its verdict (a small status endpoint the override polls).
+- **Detect a successful submission** by wrapping `window.fetch` once and matching a `POST` to
+  `api.framer.com/forms/` with `res.ok`. The request body is the submitted data, so the override
+  can read a field from it.
+- **Add a computed field** (a token, a visitor IP) with a real hidden input on the canvas
+  (`formInputHidden` plus a `formInputName`), not one injected by code, and fill it from a
+  capture-phase `submit` listener on the form, which runs before Framer's handler reads the form.
+
+```typescript
+useEffect(() => {
+    const form = document.querySelector("form")
+    const input = form?.querySelector('input[name="ip"]') as HTMLInputElement | null
+    if (!form || !input) return
+    const fill = () => {
+        const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set
+        set?.call(input, valueRef.current) // native setter so React sees the change
+    }
+    form.addEventListener("submit", fill, true) // capture phase
+    return () => form.removeEventListener("submit", fill, true)
+}, [])
+```
 
 ---
 
@@ -459,6 +564,10 @@ const { scrollYProgress } = useScroll({ target: scrollRef })
 ```
 
 Applies to any API that reads through a ref handle per event — not just `useScroll`.
+
+### Measuring a Frame's Children `[O]`
+
+Framer can wrap each child of a frame (component instances in a stack, for one) in a `display: contents` element. That wrapper has no box: `children[i]` reports no width, no `offsetLeft` and no `offsetParent`, and `scroll-snap-align` set on it is ignored. Step down to the first descendant that has a box, and measure with `getBoundingClientRect()` relative to the scroller rather than `offsetLeft`.
 
 ### Z-Index Stacking Context & React Portals `[C/O]`
 
@@ -528,6 +637,40 @@ Framer offers no styling for native `<input type="range">`, and browsers paint t
 - Scope selectors with a className (`.rs-thumb`) inside the `<style>` tag — bare `input[type=range]` leaks to every range on the page.
 
 **Dual-thumb (two stacked inputs over one track):** set `pointer-events: none` on each *input* (so overlapping inputs don't block each other or the track) and `pointer-events: auto` on the *thumb pseudo-elements* only — just the thumbs stay grabbable. Enforce non-crossing in the `onChange` handlers (clamp each thumb against the other ± one step), not in the DOM.
+
+### Inserting DOM Next to React's Nodes `[O]`
+
+When an override must add elements inside a container Framer renders (a Collection List, say),
+**add siblings and leave React's own nodes alone**. React keeps references to the children it
+rendered and moves, updates and removes them later (pagination appends pages, a tab switch
+unmounts a list). Replacing or re-parenting those children breaks the next reconciliation;
+foreign nodes placed *between* them survive, because React only touches its own.
+
+- Insert with `reactNode.before(mine)` / `after(mine)` and mark yours (`data-mine="<key>"`), so you
+  can find, skip and re-place them.
+- Watch the container with a `MutationObserver` to re-place your nodes when React remounts or
+  appends. Make placement **idempotent**: if a container already shows exactly your nodes, do
+  nothing. Otherwise every unrelated re-render removes and re-inserts them, which restarts their
+  animations.
+- Call `observer.takeRecords()` right after your own edits, so they do not trigger another pass.
+- Never hide React's node with an inline style it also manages; React may rewrite it. Use an
+  attribute plus an injected stylesheet rule if you must hide something.
+
+### Refreshing Published CMS Content In Place `[O]`
+
+A Framer site is a static deployment: a new CMS item exists only in the next published version of
+the page, and the running page never learns about it. To show it without a reload:
+
+1. Fetch the current page again (`fetch(location.pathname + "?x=" + Date.now(), { cache: "no-store" })`).
+   Framer serves pages with `max-age=0`, so this returns the newest deployment.
+2. Parse it with `DOMParser` and read the list's rendered items by `[data-framer-name="..."]`. The
+   server-rendered HTML contains the first page of a Collection List (with the sort it was given on
+   the canvas, whatever the URL's query says), and each date field carries `<time datetime>`, which
+   is enough to key and re-sort items.
+3. Compare against what the page loaded with, and insert only the new items (see above).
+
+After a form submission, publishing can take 5 to 15 seconds: poll every couple of seconds with a
+time limit, and give the visitor a visible state while waiting.
 
 ### Common Patterns
 

@@ -1,6 +1,6 @@
 # Framer Plugin API Reference
 
-Detailed API documentation for the `@framer/plugin` SDK. For a concise overview, see [SKILL.md](SKILL.md).
+Detailed API documentation for the `@framer/plugin` SDK. For a concise overview, see [SKILL.md](../SKILL.md).
 
 > Package renamed (Framer 3.0, `@framer/plugin@4.0.1`, 2026-06-16): import from `@framer/plugin`. The old `framer-plugin` package is deprecated on npm. peerDeps: react ^18.2.0, react-dom ^18.2.0, csstype ^3.1.1.
 
