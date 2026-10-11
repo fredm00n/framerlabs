@@ -91,6 +91,7 @@ Build, debug, and modify Framer plugins using the Plugin SDK.
 - Data storage decision tree (localStorage vs pluginData), licensed-plugin project-remix handling, and server-side licensing keyed on the Framer user id
 - CMS sync patterns from official examples
 - Common pitfalls and workarounds
+- Self-update check: before use, compares its version with this repo's and reads the newer copy if the installed one is stale
 - Marketplace submission: workflow, listing asset specs, how the automated post-publication review works (shipping sources, greppable permission guards), submission identity gotchas (manifest ids, name collisions), and a pre-submission checklist
 
 **File structure:**
