@@ -29,7 +29,7 @@ Workarounds and tricks for Framer.
 
 ## Changelog
 
-**2026-10-11** — framer-plugins skill: it now checks this repo for a newer version before you start, and works from the latest copy if yours is out of date, so installed copies stay current without reinstalling.
+**2026-10-11** — framer-plugins skill: it now checks this repo for a newer version before you start, and works from the latest copy if yours is out of date, so installed copies stay current without reinstalling. Projects that add `framer-plugins: auto-update` to their agent instructions get the installed copy replaced too.
 
 **2026-10-10**
 - New framer-agent-playbook skill: what an AI agent should know before building or editing a Framer site through Framer Agent, from the deletes that can't be undone to calls that report success and do nothing, layouts that break on tablet and phone, and safe habits for live client sites; checked against Framer's own agent docs so it only covers what they leave out.
