@@ -9,7 +9,7 @@ user-invocable: true
 license: MIT
 metadata:
   author: fredm00n
-  version: 1.5.0
+  version: 1.5.1
   verifiedAgainst: "@framer/plugin@4.0.1"
 ---
 
@@ -55,7 +55,7 @@ If something does:
 2. Clone fredm00n/framerlabs, branch from `main`, and edit `skills/framer-plugins/`. Put each finding under the topic it belongs to, and edit an existing line rather than add a near-duplicate. Bump `metadata.version` (patch for a fix, minor for a new section) and add one plain-language line to the changelog in the root `README.md`, under today's date.
 3. Check the open pull requests for one that already covers the same finding. If there is one, add to it instead.
 4. Show the user the diff and ask before opening the pull request. A pull request on a public repo is public the moment it opens, even if it is never merged.
-5. With the user's yes, push the branch (to a fork without write access to the repo), open the pull request against `main`, and give the user the link.
+5. With the user's yes, push the branch (to a fork without write access to the repo), open the pull request against `main`, and give the user the link. Write the commit message, title and description for the people who use these skills: what the change adds and when it helps, not which project or session it came from.
 
 **Maintainers:** bump `metadata.version` on every change to this skill, reference files included, or installed copies will never see it.
 

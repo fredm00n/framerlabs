@@ -1,5 +1,10 @@
 # Components, code files and icons
 
+- **A native accordion is built end to end through the agent**: the component, its two variants,
+  the CMS binding and the click. The toggle is `SET <row> onTap.0.action="SET_VARIANT"
+  onTap.0.controls.variant="cycle"`, set once on the primary variant; it propagates to the others.
+  The generated `core-examples.md` has a worked FAQ accordion; read it before building one. The shape to
+  build is in `framer-code-components-overrides` § Native First (2026-10-11).
 - **Framer's built-in Ticker loops with one Web Animation** (`element.animate`, `iterations: Infinity`)
   whose duration comes from `speed`, so an override that changes `speed` restarts the loop and the
   strip jumps. To make it react to a swipe, drive the animation instead: find it with
@@ -30,6 +35,13 @@
   silently dropped: the write reports success and the control stays `[]`. Use
   `framer.setAttributes(id, { controls: { ...node.controls, myArray: [...] } })`, spreading the
   existing `controls` so the others survive.
+- **To switch a component's icon per instance, bind it to an icon variable.** `+IconVariable` on
+  the component, then `SET <icon> $control__icon="var(--variable-<id>)"` on the primary variant (it
+  propagates to every variant, so re-set any variant that needs its own icon, a Back button's Arrow
+  Left for one), then `SET <instance> $control__<key>="Arrow Up Right"`. A `ComputedValue` on
+  `$control__icon` (a boolean through `convertFromBoolean`) reports success and is dropped.
+  `convertFromBoolean` cannot output a boolean either, so it cannot negate a `visible` binding, and
+  `visible` with an `equals false` transform hid the layer in both states on the canvas (2026-10-11).
 - **Link variables on instances are set with `$control__link.href="…"`** (2026-09-22).
 - **A code component annotated `@framerSupportedLayoutWidth fixed` ignores the instance's `100%`.**
   It stayed at its intrinsic width inside a stretching wrapper. Use `any` for both axes when the

@@ -41,7 +41,9 @@
 - **Rewriting links across a site:** CMS link fields take a new value through
   `item.setAttributes({ fieldData: { <fieldId>: { type: "link", value } } })`, which leaves the
   other fields alone. A search for links has to cover the layout template too: it is neither a
-  `WebPageNode` nor a `ComponentNode` (2026-10-08).
+  `WebPageNode` nor a `ComponentNode` (2026-10-08). One reason to do it is a Framer affiliate tag:
+  a partner link `framer.link/<tag>` redirects to `framer.com/?via=<tag>`, so append `?via=<tag>`
+  (or `&via=<tag>`) to every framer.com URL (2026-10-09).
 - **Smooth anchor scrolling is `link.smoothScroll="true"`** on each frame that carries a link, every
   variant included. With Lenis on the page, the jump to an anchor such as `/#plugins` eases over about 0.4s (2026-10-08).
 - **The site language has no API.** `framer.getDefaultLocale()` reports `en-US` while the published

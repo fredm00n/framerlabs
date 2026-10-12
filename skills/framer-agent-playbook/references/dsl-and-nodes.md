@@ -7,6 +7,11 @@
   `left="0px"` in the Tablet replica when only its width was set. Set `left="null" right="0px"`
   with the width (2026-10-06).
 
+- **`stackDistribution="space-between"` publishes with no gap.** The stack keeps its `gap` value in
+  the editor, but the published flex box gets `gap: normal`, so in an `auto`-height stack (no
+  leftover space) the children touch. A card's links sat flush under its summary on phone. Use
+  `start` with a `gap` wherever the stack hugs its content, and keep `space-between` for a stack
+  with a real height to fill (2026-10-11).
 - **Send one `MOVE` or `SET` per `applyChanges` call.** Several `MOVE` lines in one call reported
   "applied cleanly" but ran only the first, and put that node in the *last* line's parent. Two
   `SET` lines on different nodes applied only the first too (see also the `codeOverride` note).

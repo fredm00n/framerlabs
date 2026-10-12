@@ -32,11 +32,17 @@ distinct from this repo's `framer-code-components-overrides` skill.
   project needs its own `session new`, and every `exec` then needs the matching `-s <id>`.
 - **Opening a new session kills the previous session's connection**, so finish a batch before
   reconnecting.
+- **A session left idle for about an hour expires** ("Session 1 is invalid or has expired"). Run
+  `session new` again (2026-10-11).
 - **`session new` fails about half the time with `Vekter stalled after "showUI"`. Run it again.**
   Vekter is Framer's editor runtime on their side; the headless instance loaded the UI and then
   filed no perf mark for 60s. It is not a credential problem (a bad key gives `API key does not have
   access to this project`). Measured 2026-08-22 on a client build: stall, success, success. Each
   attempt burns about 85s.
+- **Session ids are reused across projects.** After the relay restarts, `session new` hands out
+  `1` again, so a script that ran with `-s 1` on one project now runs on whichever project was
+  connected last. Run `session list` (it shows each id's `projectId`) before any write, above all
+  when a live project is connected on the same machine (2026-10-10).
 - **Two session-level module failures are fixed only by `session new`, never by retrying:**
   `ensureComponentsInLoader: Some modules are missing` (pages with a ShaderNode) and
   `Assertion Error: The importMap has to exist on the module` (reading a `ComponentNode`) (2026-08-21).
@@ -75,13 +81,16 @@ connection between `exec` calls. The package has no MCP SDK or JSON-RPC code, an
 Framer MCP server is needed. Any Framer MCP server is a third-party alternative. Checked in
 the 0.0.46 and `framer-api` 5.1.0 packages, 2026-10-04.
 
-**Auto-branching (not yet tested here).** Framer's agent page and the 0.0.46 `framer` skill say
-external-agent edits land on a branch when auto-branching is on, and that a replacement
-`session new` may start another branch. `framer-api` 5.1.0 exposes `getBranches`, `createBranch`,
-`switchBranch`, `renameBranch`, `mergeBranch` and `deleteBranch`. Its `publish()` doc says a publish from a
-branch updates only that branch's deployment and leaves production alone, which would let an agent
-check its work on a published URL mid-build. Until a build confirms which branch an edit landed on, keep
-treating deletes as irreversible (see [Destructive operations](destructive-operations.md)).
+**Auto-branching.** With auto-branching on, the first write of a fresh `session new` opens a new
+branch with an `adjective-noun` name and prints `[FRAMER_BRANCH_CHANGE]`; every later write in that
+session lands on it. `framer.agent.getActiveBranch()` names it, `framer.agent.renameBranch(id, title)`
+renames it, `publish` on it updates only a branch preview URL
+(`<site>--<branch-slug>-<id>.framer.app`) and leaves production alone, and
+`framer.agent.mergeBranch("main")` merges it and switches the session to main, after which a
+`publish` goes to production. CMS items and code file edits ride the branch too. Merge and publish
+only when the user asks (on a live site, see [`live-files.md`](live-files.md)). Seen on a project
+its owner cleared for it, 2026-10-10. Deletes stay irreversible on a branch too until it is confirmed otherwise (see
+[Destructive operations](destructive-operations.md)).
 
 ## What the bridge cannot do
 
@@ -96,6 +105,8 @@ treating deletes as irreversible (see [Destructive operations](destructive-opera
 - **`framer.publish()` from `framer-api` in a Val Town val works** and is not behind that gate: a
   webhook call published and went live in 5.6 s (2026-09-25).
 - **`publish` is gated by the auto-mode permission classifier** ("Production Deploy"), even
-  `{action:"preview"}`. Publish from an interactive session or the editor. `framer.publish()` can
-  also fail with a bare "Publish failed" on a valid project; it is intermittent (three successes
-  running on 2026-08-18), so retry, then fall back to the editor.
+  `{action:"preview"}`. Publish from an interactive session or the editor. If your agent's harness
+  gates production deploys, a refused publish went through once the user had asked for it in plain
+  words in the conversation (2026-10-11).
+  `framer.publish()` can also fail with a bare "Publish failed" on a valid project; it is
+  intermittent (three successes running on 2026-08-18), so retry, then fall back to the editor.

@@ -1,11 +1,11 @@
 ---
 name: framer-code-components-overrides
-description: Create Framer Code Components and Code Overrides. Use when building custom React components for Framer, writing Code Overrides (HOCs) to modify canvas elements, implementing property controls, working with Framer Motion animations, handling WebGL/shaders in Framer, or debugging Framer-specific issues like hydration errors and font handling.
+description: Create Framer Code Components and Code Overrides. Use before writing or editing any `.tsx` for Framer, including deciding whether a feature needs code at all. Covers building custom React components for Framer, writing Code Overrides (HOCs) to modify canvas elements, implementing property controls, working with Framer Motion animations, handling WebGL/shaders in Framer, and debugging Framer-specific issues like hydration errors and font handling.
 user-invocable: true
 license: MIT
 metadata:
   author: fredm00n
-  version: 1.0.0
+  version: 1.1.0
 ---
 
 # Framer Code Development
@@ -50,9 +50,29 @@ If something does:
 2. Clone fredm00n/framerlabs, branch from `main`, and edit `skills/framer-code-components-overrides/`. Put each finding under the topic it belongs to, and edit an existing line rather than add a near-duplicate. Bump `metadata.version` (patch for a fix, minor for a new section) and add one plain-language line to the changelog in the root `README.md`, under today's date.
 3. Check the open pull requests for one that already covers the same finding. If there is one, add to it instead.
 4. Show the user the diff and ask before opening the pull request. A pull request on a public repo is public the moment it opens, even if it is never merged.
-5. With the user's yes, push the branch (to a fork without write access to the repo), open the pull request against `main`, and give the user the link.
+5. With the user's yes, push the branch (to a fork without write access to the repo), open the pull request against `main`, and give the user the link. Write the commit message, title and description for the people who use these skills: what the change adds and when it helps, not which project or session it came from.
 
 **Maintainers:** bump `metadata.version` on every change to this skill, reference files included, or installed copies will never see it.
+
+## Native First: Is Code Needed at All? `[C/O]`
+
+Unless the user explicitly asks for a code component or a code override, build the feature natively
+in Framer, with layers, variants, effects and CMS bindings. Write code only for what those cannot
+express: WebGL, canvas, third-party SDKs, scroll maths, DOM and browser APIs.
+
+This holds hardest for proven UI patterns. An FAQ accordion, tabs, a testimonial slider, a pricing
+toggle, a nav dropdown and a modal are all native in Framer, and the native build is the better one:
+the site owner edits it without code, binds it to the CMS, restyles it with text and colour styles,
+and it adapts to breakpoints and survives Framer upgrades. A code component for one of these is
+over-engineering even when it works and looks right.
+
+A disclosure or accordion is one component with two variants, Collapsed and Expanded, and nothing
+else. No wrapper component around the set: repeat the item with a Collection List so the content
+comes from the CMS. No props, arrays of objects, or font, weight and colour controls that re-create
+what native layers already do.
+
+When you cannot tell whether native can do it, ask the user before writing code. Asking costs one
+message; a wrong guess costs a whole build.
 
 ## Pitfalls (quick lookup)
 
@@ -62,7 +82,7 @@ If something does:
 | Font styles not applying | Accessing font props individually | Spread entire font object: `...props.font` |
 | Hydration mismatch | Browser API in render | Use `isClient` state pattern |
 | Hydration error #425 at `style`, and SSR CSS with `>` selectors or quoted attribute values never applies | React 18's server renderer escapes `<style>{css}</style>` text, so `>` ships as `&gt;` and `"` as `&quot;` | Render `<style dangerouslySetInnerHTML={{ __html: css }} />` |
-| Dimensions stuck at 0 / SSR'd size persists | Initial state read from `window` already equals real value, `setState` no-ops | Init state to 0, flip in effect (see [Hydration Safety](#hydration-safety)) |
+| Dimensions stuck at 0 / SSR'd size persists | Initial state read from `window` already equals real value, `setState` no-ops | Init state to 0, flip in effect (see [Hydration Safety](#hydration-safety-co)) |
 | Override finds no element after a later publish, with no error and no code change | It queried its own element by a React `useId()`; when hydration differs from the server render, the DOM keeps the server's id | Make the id in the browser after mount, or use a ref (see [Ids That Link Elements](#ids-that-link-elements-co)) |
 | Child has no width, `offsetLeft` or `offsetParent`; `scroll-snap-align` on it is ignored | Framer wrapped each child of the frame in a `display: contents` element | Step to the first descendant with a box, measure with `getBoundingClientRect` (see [Measuring a Frame's Children](#measuring-a-frames-children-o)) |
 | Color value crashes when user binds a token | `ControlType.Color` returns `{value: "#xxx"}` for tokens, string for static | Unwrap with `tok(v)` before use (see [Color Tokens](#color-tokens-controltypecolor-c)) |
@@ -71,6 +91,9 @@ If something does:
 | Scroll animation broken | `overflow: scroll` on container | Use IntersectionObserver on viewport (see [Scroll Detection](#scroll-detection-constraint-co)) |
 | Scroll/animation silently stops working when target ID is set | `useScroll` target stored in `useState` captures null on first render | Use `useRef` for live-read targets (see [Live-Read Refs](#live-read-refs-useref-not-usestate-co)) |
 | Named CMS layer not found by `findByFramerName` | Layer is a dynamic component instance — name not on `data-framer-name` | Wrap dynamic component in a plain frame carrying the expected name |
+| Every named layer of a CMS item missing at once | The whole repeated Collection List item was made a component | Keep the item a plain frame (see [The Repeated Item Is Never a Component](#the-repeated-item-is-never-a-component-c)) |
+| Override that rewrites `props.style` height does nothing on the published page | Framer emits sizes as generated CSS classes, and the page root carries an inline `min-height: 100vh` | Set the value inline, with `!important` against the root (see [Published Sizing](#published-sizing-an-override-cannot-see-o)) |
+| URL changes but the page does not load after `router.navigate()` or a scripted link click | Framer softens programmatic cross-page navigation into a desynced route change | Gate in place instead (see [Cross-Page Navigation](#no-programmatic-cross-page-navigation-co)) |
 | HLS video permanently pixelated | `.m3u8` in Chrome without HLS.js | Use HLS.js dynamic import pattern (see [HLS Video Streaming](#hls-video-streaming-m3u8-c)) |
 | Overlay stuck "half-pressed" / needs two clicks to close | Triggering Framer interactions with synthetic events (`dispatchEvent`) | Call the React handler directly via fiber traversal (see [references/fiber-handlers.md](references/fiber-handlers.md)) |
 | Overlay stuck under content | Stacking context from parent | Use React Portal to render at `document.body` level |
@@ -89,12 +112,13 @@ If something does:
 
 ## Contents
 
-- [Foundations](#foundations) — components vs overrides, annotations, starter templates
+- [Native First](#native-first-is-code-needed-at-all-co) — whether the feature needs code at all
+- [Foundations](#foundations) — components vs overrides, annotations, starter templates, multi-file components
 - [Authoring](#authoring) — property controls, fonts, color tokens
 - [Rendering & SSR](#rendering--ssr) — hydration, canvas detection, concurrent rendering, npm imports
-- [CMS](#cms) — text timing in overrides, code-component CMS pattern, what the CMS makes public
+- [CMS](#cms) — text timing in overrides, the repeated item, code-component CMS pattern, what the CMS makes public
 - [Overrides — specific patterns](#overrides--specific-patterns) — variant control, fiber handlers, component instances, Framer forms
-- [DOM & Performance](#dom--performance) — scroll detection, live-read refs, portals, inserting next to React, live CMS refresh, common patterns
+- [DOM & Performance](#dom--performance) — scroll detection, live-read refs, portals, published sizing, cross-page navigation, inserting next to React, live CMS refresh, common patterns
 - [Media](#media) — HLS video, WebGL
 - [Debug](#debug) — gated logging
 
@@ -124,6 +148,9 @@ Full set:
 - `@framerIntrinsicWidth` / `@framerIntrinsicHeight` — Default dimensions
 - `@framerSupportedLayoutWidth` / `@framerSupportedLayoutHeight` — `any`, `auto`, `fixed`, `any-prefer-fixed`
 
+Most Framer code files can start with `// @ts-nocheck`. Framer's hook and prop types are loose, and some
+patterns (conditional hooks, fiber walking) fail strict TypeScript.
+
 ### Code Override Pattern `[O]`
 
 ```typescript
@@ -142,6 +169,9 @@ export function withFeatureName(Component): ComponentType {
 ```
 
 Naming: Always use `withFeatureName` prefix.
+
+Overrides take no property controls and cannot query the CMS; they read CMS content only once it is
+rendered (see [CMS](#cms)). Their settings live in a constants block at the top of the file.
 
 ### Overrides Must Be Literal Exports (picker detection) `[O]`
 
@@ -195,6 +225,11 @@ addPropertyControls(MyComponent, {
     // Controls here
 })
 ```
+
+### Multi-File Components `[C]`
+
+A component split across several source files needs one Framer code file per source file, and every
+import between them carries its extension: `./constants.tsx`, not `./constants`.
 
 ---
 
@@ -277,6 +312,9 @@ if (!isClient) {
 - `window`, `document`, `navigator`
 - `localStorage`, `sessionStorage`
 - `window.innerWidth`, `window.innerHeight`
+
+Do that work in `useEffect`, never `useLayoutEffect`, or expect hydration mismatches and
+first-paint flashes.
 
 **Initial state must match SSR, then flip in an effect:**
 
@@ -451,6 +489,15 @@ function resolvePlainText(props: any): string {
 ```
 
 **Never assume text is only in `props.children`.** Variable-bound text bypasses the children structure entirely — `props.children` will contain a placeholder while `props.text` has the real value. If you only read children, variable text is invisible to your override.
+
+### The Repeated Item Is Never a Component `[C]`
+
+Never turn the whole repeated item of a Collection List into a component. A `findByFramerName`
+walker reads the React element tree through `props.children`, and a component instance's inner tree
+is not there until it renders. Wrapping the item in a component therefore hides every named layer at
+once (on one build the background, the video and the moving titles all vanished, and the item
+collapsed into one background layer). Components are fine inside each named frame; the named frames
+stay plain frames at the item's top level.
 
 ### CMS in Code Components `[C]`
 
@@ -656,6 +703,31 @@ export default function ComponentWithOverlay(props) {
 
 **Canvas vs Published:** Portals work in both canvas editor and published site. No RenderTarget check needed.
 
+### Published Sizing an Override Cannot See `[O]`
+
+Two kinds of size on a published Framer page never reach an override's props:
+
+- A frame's height is emitted as a generated CSS class (`.framer-xxxxxxx { height: 100vh }`), not as
+  an inline style, so there is no height in `props.style` to read or rewrite. Pass an explicit inline
+  `height` instead; an inline style outranks the generated class.
+- Every page root carries an inline `min-height: 100vh` on `<div data-framer-root>`. Beating it takes
+  `!important`.
+
+Both matter for full-height pages on phones: `100vh` is the large viewport, measured with the browser's
+URL bar hidden, so a one-screen page scrolls a few pixels until both sources say `100svh`. The
+simplest fix is site-wide custom CSS, `[data-framer-root] { min-height: 100svh !important }`, plus
+the frame's own height; an override that sets both inline is the fallback (2026-08-19). Target published elements by `[data-framer-name="…"]`, which survives publishing, never by
+the generated `.framer-*` classes, which change.
+
+### No Programmatic Cross-Page Navigation `[C/O]`
+
+A published Framer site is a single-page app, and it softens every scripted move to another page,
+`router.navigate()`, a `.click()` on an anchor and `window.location.replace()` alike, into a desynced
+route change: the URL updates and the page does not load. Gate or coordinate in place instead: write
+a `localStorage` token, fire a custom window event, and let an override on the current page react. The one
+exception is a redirect that runs on a full page load, in a head script or before the app has booted:
+there `location.replace()` is a real navigation and works.
+
 ### Writing State into the URL `[C]`
 
 A component can drive **Framer's native URL-bound filtering** by writing a query param. Framer's filters do the reading/filtering — your component only writes the param and keeps it in sync. Two non-obvious rules for the write side:
@@ -671,7 +743,7 @@ window.history.replaceState({}, "", url.toString())
 window.dispatchEvent(new PopStateEvent("popstate"))
 ```
 
-The component also listens on `popstate` to re-read the param on Back/Forward and hydrate its own UI (clamp/validate — it's user-editable). Init state from props, not the URL, so SSR matches; do the first URL read in `useEffect`. This is **intra-page only** — it does not navigate, so it sidesteps the "cross-page nav is unreliable in published Framer" trap. It's the same idea as a custom-event state bus, but over the browser's native `popstate` channel, so Framer's own URL filters pick it up for free.
+The component also listens on `popstate` to re-read the param on Back/Forward and hydrate its own UI (clamp/validate — it's user-editable). Init state from props, not the URL, so SSR matches; do the first URL read in `useEffect`. This is **intra-page only** — it does not navigate, so it sidesteps the [cross-page navigation](#no-programmatic-cross-page-navigation-co) trap. It's the same idea as a custom-event state bus, but over the browser's native `popstate` channel, so Framer's own URL filters pick it up for free.
 
 ### Styling Native Range Inputs `[C]`
 

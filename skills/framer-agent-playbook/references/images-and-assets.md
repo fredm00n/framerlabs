@@ -57,7 +57,11 @@
   than saving it; cross-origin, the HTML `download` attribute would not help either (2026-10-07).
 - **Generated art is cheap and on-brand.** Three routes have worked: procedural dithered scenes
   drawn with numpy (no photos), two-colour Bayer dithers of real photos with ffmpeg (`paletteuse`
-  with a 16×16 palette PNG), and recoloured CC0 SVG illustrations.
+  with a 16×16 palette PNG), and recoloured CC0 SVG illustrations. `paletteuse` needs a 256-pixel
+  palette, so build the 16×16 PNG with `geq`, half the pixels ink and half paper, then run
+  `-i photo.jpg -i pal.png -filter_complex "[0]scale=1400:-1,format=gray,eq=gamma=1.15:contrast=1.05,format=rgb24[g];[g][1]paletteuse=dither=bayer:bayer_scale=2"`.
+  Dithered gradients come from the `gradients` lavfi source (`type=radial` for a radial one)
+  through the same `paletteuse`. Contrast above 1.2 blows the highlights out (2026-09-17).
 - **`fillImagePositionX` moves the crop window, not the image.** `left` shows the left part of the
   picture, which feels reversed when the subject is off-centre.
 - **Set `altText` with one `SET` per `applyChanges` call.** On 2026-09-29 five `SET <id> altText="…"`
@@ -69,16 +73,19 @@
   frame: the copy keeps Tile, and so does a later `SET <id> fill="<url>"`. At Scale 100% a tile is
   drawn at half the image's pixel size, so upload at twice the tile width you want (2026-10-06).
 - **A fine repeating pattern baked into an image (scanlines, a dense grid) shows moiré** once Framer
-  scales it to a width that is not a whole multiple. It showed on a scanline map (2026-10-08). Flat fills with an outline survive any size; if a pattern is the point, make it
-  coarse (several CSS pixels per period) or draw it natively.
+  scales it to a width that is not a whole multiple. It showed on a scanline map (2026-10-08).
+  Flat fills with an outline survive any size; if a pattern is the point, make it coarse (several
+  CSS pixels per period) or draw it natively.
 - **Uploading an SVG strips a `viewBox` that matches its `width` and `height`**, and an SVG image
   without a `viewBox` does not scale: drawn into a smaller frame it is cropped, not shrunk. Give the
   file `width` and `height` at half the `viewBox` size before upload, so the `viewBox` survives.
   The upload also inlines classes into `fill` attributes, so recolour a logo by replacing its path
   fills, not with a `fill` on the root (2026-10-09).
 - **A wide SVG blur is cheaper and steadier as a PNG.** A 46-unit `feGaussianBlur` on a large glow
-  renders faint rings in Chromium; rasterise it once with transparency
-  and use the PNG as the fill.
+  renders faint rings in Chromium; rasterise it once with transparency and use the PNG as the
+  fill. A headless browser does it: open a page sized to the SVG's `width` and `height` with a
+  transparent body, set the SVG as its content, and take a Playwright screenshot with
+  `omitBackground: true` (2026-09-28).
 - **Framer smooths images scaled to a non-integer size.** Pixel-art and dither grain survives if the
   file is about twice the displayed size.
 

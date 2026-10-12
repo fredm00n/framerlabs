@@ -44,6 +44,9 @@ Workarounds and tricks for Framer.
 ## Changelog
 
 **2026-10-12**
+- framer-code-components-overrides skill: a new first section on when code isn't needed at all (accordions, tabs and sliders are better built natively), plus notes on multi-file components, published sizes an override can't see, and why scripted navigation to another page fails on a published site.
+- framer-agent-playbook skill: tested notes on Framer's auto-branching, session ids reused across projects, a native accordion built end to end through the agent, icon variables, and more ways a screenshot or a read can mislead you.
+- All three skills: a pull request your agent sends back here now describes what it adds for users, never which project it came from.
 - All three skills now check this repo for a newer version at the start of a session and work from the latest copy if yours is out of date. Add one line per skill to your project's CLAUDE.md or AGENTS.md to have the installed copy replaced automatically.
 - The skills can now send what you learn on a real build back here as a pull request, if you opt in. Nothing goes out without your yes, and nothing from your project goes with it.
 

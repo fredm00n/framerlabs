@@ -67,12 +67,13 @@ cp -r /path/to/<skill-name> ~/.claude/skills/
 Build custom React components and Code Overrides in Framer. Sections are tagged `[C]` (code component), `[O]` (code override), or `[C/O]` (both).
 
 **Topics covered:**
-- Foundations — Code Component vs Code Override, required `@framer` annotations, starter templates
+- Native first: whether a feature needs code at all (accordions, tabs, sliders, toggles and modals are better built natively)
+- Foundations — Code Component vs Code Override, required `@framer` annotations, starter templates, multi-file components
 - Authoring — font handling (always spread the font object), `ControlType.Color` token unwrapping, full property-controls reference (including separator lines)
 - Rendering & SSR — hydration safety with SSR-init trap, why `useId()` must never link elements (overrides that go dead after a publish), inline style tags that React escapes, `RenderTarget` canvas vs preview detection, `startTransition` for concurrent rendering, NPM imports
-- CMS — variable-bound vs static text in overrides, CMS content timing, full CMS-in-code-components pattern (`useQueryData` + `findByFramerName`, plain-frame trap, canvas preview limitation), and why every CMS field is public in published data files
+- CMS — variable-bound vs static text in overrides, CMS content timing, why the repeated Collection List item must never be a component, full CMS-in-code-components pattern (`useQueryData` + `findByFramerName`, plain-frame trap, canvas preview limitation), and why every CMS field is public in published data files
 - Overrides — variant control without prop access, why an override produced by a factory won't appear in Framer's override picker (must be a literal export), triggering Framer-attached handlers via React fiber traversal (e.g. URL deep link to an overlay), driving component instances (`onClick` over `onTap`, `variant` by name, scoped CSS), how native Framer forms submit and how to add a computed hidden field
-- DOM & Performance — scroll detection constraint, `useRef` vs `useState` for live-read targets (`useScroll` etc.), React Portals for z-index stacking context, writing state into the URL to drive Framer's native filters, styling native range inputs (cross-engine thumbs, dual-thumb technique), measuring children through Framer's `display: contents` wrappers, adding DOM next to React's nodes without breaking it, showing new CMS items without a reload, common patterns library
+- DOM & Performance — scroll detection constraint, `useRef` vs `useState` for live-read targets (`useScroll` etc.), React Portals for z-index stacking context, writing state into the URL to drive Framer's native filters, styling native range inputs (cross-engine thumbs, dual-thumb technique), measuring children through Framer's `display: contents` wrappers, adding DOM next to React's nodes without breaking it, sizes on a published page an override cannot see, why scripted navigation to another page fails, showing new CMS items without a reload, common patterns library
 - Media — HLS video streaming (`.m3u8`) with dynamic HLS.js import, WebGL transparency and shader compilation
 - Debug — gated `console.log` via module-level `debugMode` flag
 - Common patterns library — shared state, scroll effects, magnetic hover, animation triggers, mobile optimization, Safari SVG fix, loading states with scroll lock, easing curves for lerp animations
@@ -123,7 +124,7 @@ framer-plugins/
 Edit and build Framer sites through Framer Agent (`npx @framer/agent`). It sits next to Framer's own `framer` skill, which teaches the DSL and the API, and holds what that skill leaves out: what broke on real builds, what reports success and does nothing, and what can never be taken back. Every finding carries the date it was found.
 
 **Topics covered:**
-- Before the first call: connecting, sessions, several agents on one project, and what the bridge cannot do
+- Before the first call: connecting, sessions, several agents on one project, auto-branching, and what the bridge cannot do
 - What cannot be undone: deletes and overwrites with no history, a collection page that takes its CMS detail page with it, removal calls that report success and remove nothing, `addItems` replacing whole CMS items
 - Exec scripts and the DSL: one change per `applyChanges`, reading errors correctly, temporary ids, effects, event handlers, variants, sticky, rotation, accessibility
 - Text styles and fonts, components and code files, CMS collections and bindings, forms and webhooks, images, SVG and video, pages, links and SEO

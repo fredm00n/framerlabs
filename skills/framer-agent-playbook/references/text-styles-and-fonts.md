@@ -73,6 +73,11 @@ await framer.agent.readProject([{ type: "font-search", name: "Archivo" }], { pag
   exist. An empty result is not proof of absence. `name` also returns `[]` for
   a family that is already in `<project-fonts>` (Mona Sans did), and for workspace custom
   fonts (Departure Mono did).
+- **Workspace custom fonts are listed in `<custom-fonts>`** in the agent's context. Copy the family
+  string exactly; casing matters, and a lower-case family name stays lower case. An upload is
+  workspace-scoped, so every project in the workspace can use it. The list can lag a fresh upload: then have the user apply
+  the font once through the editor's font picker and read `fontName` back off that node. A guessed
+  name falls back to a look-alike without an error, so confirm with a screenshot (2026-07-31).
 - Families with a usable `wdth` above 100 (as of 2026-08-01): Mona Sans and Hubot Sans (75–125),
   Georama (62.5–150), Saira (50–125), Science Gothic (50–200), Google Sans Flex and Roboto Flex
   (25–151). `Archivo Narrow` and `Archivo Black` are separate families, not axis positions.
