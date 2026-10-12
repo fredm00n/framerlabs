@@ -12,6 +12,20 @@ Agent skills that teach AI coding agents how to build Framer sites, components a
 | [framer-agent-playbook](skills/framer-agent-playbook/) | Building and editing Framer sites through Framer Agent — what can't be undone, DSL and API traps, breakpoints, CMS, forms, and working safely in live client sites |
 | [framer-plugins](skills/framer-plugins/) | Framer Plugin SDK — plugin modes, canvas insertion + code files, CMS/ManagedCollection sync, permissions, licensing, Marketplace submission |
 
+### Contributing
+
+The skills are community-maintained and grow from real builds: every finding comes from something that broke or cost time on an actual Framer project. Your agent can add to them. Put one line per skill in your project's `CLAUDE.md` or `AGENTS.md`:
+
+```
+framer-plugins: auto-update, contribute
+framer-code-components-overrides: auto-update
+```
+
+- `auto-update` replaces your installed copy when a newer version is published here, in its own commit.
+- `contribute` lets your agent offer, at the end of a session, to open a pull request with what it learned. It strips everything that comes from your project first (company and client names, domains, project ids, file paths, keys) and shows you the diff before anything is opened.
+
+Without a line, a skill never edits itself and never opens a pull request. It only tells you when a newer version is out.
+
 ## [Hacks](hacks/)
 
 Workarounds and tricks for Framer.
@@ -29,7 +43,9 @@ Workarounds and tricks for Framer.
 
 ## Changelog
 
-**2026-10-11** — framer-plugins skill: it now checks this repo for a newer version before you start, and works from the latest copy if yours is out of date, so installed copies stay current without reinstalling. Projects that add `framer-plugins: auto-update` to their agent instructions get the installed copy replaced too.
+**2026-10-12**
+- All three skills now check this repo for a newer version at the start of a session and work from the latest copy if yours is out of date. Add one line per skill to your project's CLAUDE.md or AGENTS.md to have the installed copy replaced automatically.
+- The skills can now send what you learn on a real build back here as a pull request, if you opt in. Nothing goes out without your yes, and nothing from your project goes with it.
 
 **2026-10-10**
 - New framer-agent-playbook skill: what an AI agent should know before building or editing a Framer site through Framer Agent, from the deletes that can't be undone to calls that report success and do nothing, layouts that break on tablet and phone, and safe habits for live client sites; checked against Framer's own agent docs so it only covers what they leave out.

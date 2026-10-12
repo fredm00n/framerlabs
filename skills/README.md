@@ -27,6 +27,19 @@ npx skills add fredm00n/framerlabs --skill framer-agent-playbook
 
 This installs the skill into your project's `.claude/skills/` folder.
 
+### Updates and contributions
+
+Every skill checks this repo for a newer version once per session and uses the latest copy if yours is stale. One line per skill in your project's `CLAUDE.md` or `AGENTS.md` decides what else it may do:
+
+```
+framer-agent-playbook: auto-update, contribute
+```
+
+- `auto-update`: replace the installed folder with the newer version, in its own commit.
+- `contribute`: at the end of a session, offer to open a pull request here with what the session learned, rewritten without anything from your project, and only after you've seen the diff and said yes. Without write access, the agent works from a fork.
+
+Either word works alone. With no line, the skill tells you when an update exists and does nothing else.
+
 <details>
 <summary>Manual installation</summary>
 
@@ -91,7 +104,6 @@ Build, debug, and modify Framer plugins using the Plugin SDK.
 - Data storage decision tree (localStorage vs pluginData), licensed-plugin project-remix handling, and server-side licensing keyed on the Framer user id
 - CMS sync patterns from official examples
 - Common pitfalls and workarounds
-- Self-update check: before use, compares its version with this repo's and reads the newer copy if the installed one is stale. Add `framer-plugins: auto-update` to your project's CLAUDE.md or AGENTS.md to have it replace the installed copy too
 - Marketplace submission: workflow, listing asset specs, how the automated post-publication review works (shipping sources, greppable permission guards), submission identity gotchas (manifest ids, name collisions), and a pre-submission checklist
 
 **File structure:**
