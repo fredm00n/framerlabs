@@ -2,6 +2,8 @@
 
 A collection of resources for working with Framer.
 
+Questions, findings and help from other Framer builders: [join the Framer Labs Discord](https://discord.gg/5Kgznx7PN9).
+
 ## [Skills](skills/)
 
 Agent skills that teach AI coding agents how to build Framer sites, components and plugins. See [skills/README.md](skills/README.md) for installation instructions and detailed coverage.
