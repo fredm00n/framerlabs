@@ -37,3 +37,7 @@
   Reusing one in a later call (`sbT`, `lbar`, `pcInst` after a `DEL`) fails with "The requested id
   already exists", every `SET` that names it goes to the old node, and a `DEL` in the same call still
   runs. Give every call its own prefixes and every `+` node a fresh id (2026-10-04 to 2026-10-09).
+- **An `ERRORS` result on a `+` command can still create the node.** `+FrameNode` with `gap` and
+  `stackDistribution="space-between"` reported the gap as invalid, yet the frame existed without the
+  gap. Read the parent back before retrying, or the retry makes a second node (2026-10-10).
+- **`DUPE` needs a `newId`** (2026-10-10).
