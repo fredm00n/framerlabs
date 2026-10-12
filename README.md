@@ -44,6 +44,7 @@ Workarounds and tricks for Framer.
 ## Changelog
 
 **2026-10-12**
+- framer-agent-playbook skill: what the custom code API can't do (name a snippet, add a second one, or see the snippets you add in the editor), and which Run setting keeps a pasted analytics snippet from starting twice.
 - framer-code-components-overrides skill: a new first section on when code isn't needed at all (accordions, tabs and sliders are better built natively), plus notes on multi-file components, published sizes an override can't see, and why scripted navigation to another page fails on a published site.
 - framer-agent-playbook skill: tested notes on Framer's auto-branching, session ids reused across projects, a native accordion built end to end through the agent, icon variables, and more ways a screenshot or a read can mislead you.
 - All three skills: a pull request your agent sends back here now describes what it adds for users, never which project it came from.

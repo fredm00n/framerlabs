@@ -149,6 +149,14 @@
   module from framer.com/m/…. Framer's own Smooth Scroll is not insertable (2026-10-03).
 - **Plugin custom code is reachable:** `framer.setCustomCode({ html, location: "headEnd" })`,
   once per location, site-wide. Use it for CSS that must be right on first paint (2026-10-03).
+  It is one unnamed entry per location (`headStart`, `headEnd`, `bodyStart`, `bodyEnd`), listed in
+  the site's custom code settings under the plugin's name ("API Plugin" for the agent), so several
+  snippets set this way end up in one block nobody can tell apart. The API cannot name an entry,
+  add a second one, or read or edit the named snippets a user adds in the editor: `getCustomCode`
+  returns only the plugin's own entry, with `disabled: true` once the user switches it off. When
+  the user wants named snippets, hand them each snippet's code and placement to paste by hand,
+  with Run set to "Once": "On every page visit" re-runs a script on each client-side page change,
+  so an analytics snippet would initialise again (2026-10-12).
 - **`+ComponentNode` creates its primary variant for you** (`"<tmp>-primary-variant"` in
   `renamedIds`). A `DUPE` aimed at the new component lands as a second ground node next to that
   variant, and the lint reports overlapping ground nodes. `MOVE` the copy's children into the primary
