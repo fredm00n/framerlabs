@@ -59,8 +59,8 @@
   `width="100%" height="504px" aspectRatio="2.2222"` renders at the ratio; without the height the
   command is refused, and `width="1fr" height="auto" aspectRatio="1"` is refused too.
 - **`height="1fr"` on a `RichTextNode` collapses it** to one line and the text spills over its
-  siblings. To push a card footer down, add an empty spacer frame with `layout="stack" width="1fr"
-  height="1fr" minHeight="0px"`.
+  siblings. To push a card footer down, group the text in its own stack above the footer and set
+  `stackDistribution="space-between"` on the card. No spacer layer (2026-10-04).
 - **Absolute children pinned `top="0" right="0"` inside a stack parent straddle the corner.** A
   14px inset lands them inside.
 - **A parent's filter cascades onto blend-mode children.** `grayscale="100%"` on an image frame also

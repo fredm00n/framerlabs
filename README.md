@@ -46,6 +46,7 @@ Workarounds and tricks for Framer.
 ## Changelog
 
 **2026-10-13**
+- framer-agent-playbook skill: keep one layer per piece of content across breakpoints so the site owner edits each text once, with the tested command for reordering a layer on one breakpoint and the one layout where a copy is still needed; and push a card footer down with space-between instead of a spacer layer.
 - framer-agent-playbook skill: page transitions animate the whole page, layout template included, and how to keep a shared nav and footer still while the content moves; plus how to switch a template component's variant from a page setting, and the fixed height a layout template needs.
 
 **2026-10-12**

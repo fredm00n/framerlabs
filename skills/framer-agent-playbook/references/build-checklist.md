@@ -66,6 +66,9 @@ applies first: branches, no tests in the file, merge or publish only when the us
       page. `link.current` only restyles text, so it cannot draw the dot (2026-10-04).
 - [ ] No Gutter or Spacer layers: a 12-column split becomes `fr` widths plus a gap, and "push the
       button to the bottom" becomes `stackDistribution="space-between"` with the text grouped above it (2026-10-04).
+- [ ] One layer per piece of content on every breakpoint, adapted with overrides, so the site
+      owner edits each text once. Any tablet or phone copy is named for its breakpoints and noted
+      with why no override could do it (see [`breakpoints.md`](breakpoints.md)) (2026-10-13).
 - [ ] One layout template holding everything shared: nav, footer, smooth scroll, page transition.
       Every page uses it. Smooth scroll is a Lenis code module from framer.com/m.
 - [ ] Components for everything used on more than one page: buttons and text CTAs, nav (Desktop,
