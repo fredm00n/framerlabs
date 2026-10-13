@@ -50,6 +50,15 @@ needs hand-holding. Side dividers in particular: when a row of columns becomes a
 becomes a stray vertical line, and left padding becomes an indent. Either draw dividers as their own
 elements, or expect to rotate them per breakpoint.
 
+**Keep one layer per piece of content on every breakpoint.** A heading, paragraph, link or image
+that exists twice, shown on desktop with a copy shown on tablet and phone, has to be edited twice,
+and the site owner will change one and miss the other. Adapt the one layer instead: size, padding,
+gap, direction, visibility, an instance's variant and its order within the same parent are all
+breakpoint overrides. A breakpoint cannot move a layer to another parent, so when tablet needs an
+element elsewhere, build desktop with it already in the parent both layouts share. Duplicate only
+when no override gives a clean fallback, and name the copy after its breakpoints, such as
+"Lead (tablet, phone)" (2026-10-13).
+
 **Name the things that cannot reflow.** A marquee and a dimensioned drawing are legitimate exceptions,
 but only if they are recognisable. Call the marquee "Ticker" and the drawing "Plan". Then a
 responsive pass can skip them instead of stacking a scrolling row of terms into a vertical list.
@@ -125,6 +134,16 @@ finished pages (2026-08-21).
   `top=-(h/2)` to `0` on the same transition, chained on load with `onAppear` → `SET_VARIANT`. On a
   replica variant, clear an inherited `onAppear` with `onAppear.0="null"` (`onAppear="null"` is
   ignored), or the last variant loops back (2026-10-06).
+- **Reorder a layer on one breakpoint with `MOVE` on its replica:** `MOVE <replica-id><node-id>
+  parent="<replica-id><parent-id>" index="n"`, where the parent is the layer's current one. The
+  published page shows the new order on that breakpoint only. A `MOVE` on the primary moves the
+  layer on every breakpoint, and no command moves it to another parent on one breakpoint. Read
+  every breakpoint's order back after each write: an earlier per-breakpoint reorder was once lost
+  after unrelated writes (2026-10-13).
+- **Headings above a grid of cards cannot join the grid on desktop.** With `auto` rows every row
+  grows to the tallest cell, so the heading row swells; with `fit` rows the cards lose their equal
+  heights. Keep the heading row separate, and accept a tablet copy if tablet interleaves headings
+  and cards (2026-10-13).
 - **`position` is NOT overridable per breakpoint.** `SET <phone><id> position="relative"` is
   accepted, reads back as `relative` on the canvas, and is **silently ignored in the published
   CSS**. Re-pin the overlay instead (`bottom="0px"`) and pad the parent so nothing collides.
