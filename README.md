@@ -45,6 +45,9 @@ Workarounds and tricks for Framer.
 
 ## Changelog
 
+**2026-10-13**
+- framer-agent-playbook skill: page transitions animate the whole page, layout template included, and how to keep a shared nav and footer still while the content moves; plus how to switch a template component's variant from a page setting, and the fixed height a layout template needs.
+
 **2026-10-12**
 - framer-agent-playbook skill: what the custom code API can't do (name a snippet, add a second one, or see the snippets you add in the editor), and which Run setting keeps a pasted analytics snippet from starting twice.
 - framer-code-components-overrides skill: a new first section on when code isn't needed at all (accordions, tabs and sliders are better built natively), plus notes on multi-file components, published sizes an override can't see, and why scripted navigation to another page fails on a published site.

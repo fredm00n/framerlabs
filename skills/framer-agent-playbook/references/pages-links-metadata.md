@@ -6,6 +6,16 @@
   nav instance's control to `var(--variable-<id>)`, then `SET <webPageId> $control__currentPage="About"`
   on each page. A `visible` condition (`visible.from=... visible.transforms.0.name="equals"`) on a
   dot inside the nav shows the current page (2026-10-04).
+- **A template variable switches an instance's variant only through a ComputedValue.** Binding
+  `$control__variant="var(--variable-<id>)"` directly is refused ("Cannot assign variable directly
+  to a variant control"). Map each option to a variant name with `convertFromOption`:
+  `$control__variant.from="var(--variable-<id>)" $control__variant.transforms.0.name="convertFromOption"
+  $control__variant.transforms.0.cases.0.from="Home" $control__variant.transforms.0.cases.0.to="Desktop Home"`
+  (one case per option), then `.transforms.0.default="Desktop Home"` and
+  `.transforms.0.outputType="option"`. `outputType="string"` is refused. Each breakpoint replica of
+  the template needs its own binding, with its own variant names (2026-10-13).
+- **A layout template breakpoint needs a fixed height.** `height="auto"` is refused ("Layout template
+  breakpoints require a fixed pixel height"); the pages' own breakpoints take `auto` (2026-10-13).
 - **`DEL <pageId>` does not delete a page.** `applyChanges` returns clean diagnostics and the page is
   still there. Pages come out only with **`framer.removeNodes([id])`**. `DEL` does work on ordinary
   nodes, so the failure is easy to miss in a mixed batch (2026-08-24).
@@ -38,6 +48,13 @@
   layout-animates their children, so a sticky nav that sat at the footer slides up from there
   (seen at 390 after a footer link; `transform: translateY(1658px)` easing to 0). Put Flow on each
   page's own stacks instead (2026-10-08).
+- **Page effects run as a View Transition of the whole page.** `pageEffects.<page-id>.enter` and
+  `.exit` animate `::view-transition-new(root)` and `::view-transition-old(root)`, so a layout
+  template's nav and footer fade and move with the page content. Leave `x` and `y` at 0 when the
+  template should stay still, and put the movement in `onMount` appear effects on the page's own
+  content. The template's layers stay mounted across the change and keep animating under the
+  crossfade: a template instance whose variant follows a page variable animates between the two
+  pages' variants, with its variant transition (2026-10-13).
 - **Rewriting links across a site:** CMS link fields take a new value through
   `item.setAttributes({ fieldData: { <fieldId>: { type: "link", value } } })`, which leaves the
   other fields alone. A search for links has to cover the layout template too: it is neither a
