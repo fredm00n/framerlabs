@@ -54,6 +54,9 @@
 - **A hover underline under a preset needs its own preset.** Inline `textDecoration` is rejected on
   a preset-bound node, so make "Title" and "Title Hover" presets and swap them between variants (2026-09-27).
 - **Link presets need `link.textColor`**, or linked text renders browser blue on the live site (2026-09-27).
+- **A `fontName` change can report "applied cleanly" and not stick.** Switching a node from Times
+  New Roman to Libre Caslon Display left the old family in place; the same `SET` with
+  `fontWeight="400"` added went through. Read `fontName` back after every family change (2026-10-14).
 
 ## Check a font's variation axes before designing around them
 

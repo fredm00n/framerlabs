@@ -54,13 +54,21 @@
   template should stay still, and put the movement in `onMount` appear effects on the page's own
   content. The template's layers stay mounted across the change and keep animating under the
   crossfade: a template instance whose variant follows a page variable animates between the two
-  pages' variants, with its variant transition (2026-10-13).
+  pages' variants, with its variant transition (2026-10-13). The old side is a frozen snapshot of
+  the whole page, template included, so a template layer that moves between the pages (a
+  background light gliding behind the content) shows twice during the crossfade, frozen in the
+  snapshot and live underneath. Visitors see it flicker and stall. For a moving template layer,
+  give those pages no page effect and fade the page's own content in with appear effects: the
+  template layer then animates alone (2026-10-14).
 - **Rewriting links across a site:** CMS link fields take a new value through
   `item.setAttributes({ fieldData: { <fieldId>: { type: "link", value } } })`, which leaves the
   other fields alone. A search for links has to cover the layout template too: it is neither a
   `WebPageNode` nor a `ComponentNode` (2026-10-08). One reason to do it is a Framer affiliate tag:
   a partner link `framer.link/<tag>` redirects to `framer.com/?via=<tag>`, so append `?via=<tag>`
   (or `&via=<tag>`) to every framer.com URL (2026-10-09).
+- **A component instance's link control refuses a path that has no page yet** ("No page matches
+  that path"). When a build adds several pages that link to each other, create every page first,
+  then set the menu and footer links (2026-10-14).
 - **Smooth anchor scrolling is `link.smoothScroll="true"`** on each frame that carries a link, every
   variant included. With Lenis on the page, the jump to an anchor such as `/#plugins` eases over about 0.4s (2026-10-08).
 - **The site language has no API.** `framer.getDefaultLocale()` reports `en-US` while the published
