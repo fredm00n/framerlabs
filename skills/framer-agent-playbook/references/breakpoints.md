@@ -57,7 +57,9 @@ gap, direction, visibility, an instance's variant and its order within the same 
 breakpoint overrides. A breakpoint cannot move a layer to another parent, so when tablet needs an
 element elsewhere, build desktop with it already in the parent both layouts share. Duplicate only
 when no override gives a clean fallback, and name the copy after its breakpoints, such as
-"Lead (tablet, phone)" (2026-10-13).
+"Lead (tablet, phone)" (2026-10-13). A copy also costs in search: Framer publishes every breakpoint's
+layers in the HTML and hides the others with CSS, so a copied heading ships twice, and a copied H1
+gives crawlers a page with two H1s (2026-10-15).
 
 **Name the things that cannot reflow.** A marquee and a dimensioned drawing are legitimate exceptions,
 but only if they are recognisable. Call the marquee "Ticker" and the drawing "Plan". Then a

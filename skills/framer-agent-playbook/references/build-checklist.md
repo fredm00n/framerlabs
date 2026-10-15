@@ -112,7 +112,8 @@ applies first: branches, no tests in the file, merge or publish only when the us
 - [ ] Links: internal ones point at real pages, external ones at the right URL (no tracking junk),
       `mailto:` and booking links checked by hand.
 - [ ] Appear effects play once (`replay="false"`), no exit states. Headings move, paragraphs fade
-      at most.
+      at most. The largest text on the first screen stays still or starts its fade above opacity 0
+      ([`seo-and-speed.md`](seo-and-speed.md)).
 - [ ] Scale effects only scale down. The layer is built at its largest size and the effect shrinks
       it; a layer scaled up blurs once the browser rasterises it, vectors included. Static `scale`
       stays at 1, because the effect multiplies it (2026-10-06).

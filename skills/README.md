@@ -131,6 +131,7 @@ Edit and build Framer sites through Framer Agent (`npx @framer/agent`). It sits 
 - Breakpoints: building tablet and phone, and the three layout traps that only show at narrow widths
 - Rebuilding an HTML reference on the canvas, and which reads, measurements and screenshots to trust
 - Working in a live production site: branches, shared components, hiding instead of deleting, merging and publishing only when asked
+- Search and speed: structured data from CMS fields, meta descriptions, redirects, font files, the largest text on the first screen and analytics, offered as suggestions, never blockers
 - A build checklist for knowing a page is finished
 
 **File structure:**
@@ -152,6 +153,7 @@ framer-agent-playbook/
     ├── verification.md
     ├── destructive-operations.md
     ├── live-files.md
+    ├── seo-and-speed.md
     └── build-checklist.md
 ```
 
