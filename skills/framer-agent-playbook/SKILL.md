@@ -5,7 +5,7 @@ user-invocable: true
 license: MIT
 metadata:
   author: fredm00n
-  version: 1.2.4
+  version: 1.3.0
 ---
 
 # Framer Agent playbook
@@ -133,6 +133,7 @@ Full detail: [`references/destructive-operations.md`](references/destructive-ope
 | Build a form or a webhook | [`forms-and-webhooks.md`](references/forms-and-webhooks.md) |
 | Upload or place images, SVG, video | [`images-and-assets.md`](references/images-and-assets.md) |
 | Create pages, links, anchors, layout templates, SEO and site metadata | [`pages-links-metadata.md`](references/pages-links-metadata.md) |
+| Build a CMS collection with detail pages, pick fonts or appear effects for a first screen, paste analytics, or answer a search or speed question | [`seo-and-speed.md`](references/seo-and-speed.md) |
 | Rebuild an HTML reference on the canvas | [`html-reference.md`](references/html-reference.md) |
 | Trust a read, a screenshot or a measurement | [`verification.md`](references/verification.md) |
 | Delete or overwrite anything | [`destructive-operations.md`](references/destructive-operations.md) |

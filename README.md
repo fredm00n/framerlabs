@@ -45,6 +45,9 @@ Workarounds and tricks for Framer.
 
 ## Changelog
 
+**2026-10-15**
+- framer-agent-playbook skill: an SEO and speed pass. A new reference covers structured data from CMS fields, meta description fields, redirects on live sites, font files, the largest text on the first screen, analytics that miss page changes, and how to measure speed when asked. Everything in it is a suggestion to the user, never a blocker.
+
 **2026-10-14**
 - framer-agent-playbook skill: why a page transition makes a moving background in the layout template flicker and stall, and how to keep it smooth; a font change that reports success and does not apply; and the order to create pages in when their menus link to each other.
 
