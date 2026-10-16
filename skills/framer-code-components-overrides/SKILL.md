@@ -5,7 +5,7 @@ user-invocable: true
 license: MIT
 metadata:
   author: fredm00n
-  version: 1.1.0
+  version: 1.1.1
 ---
 
 # Framer Code Development
@@ -91,6 +91,8 @@ message; a wrong guess costs a whole build.
 | Scroll animation broken | `overflow: scroll` on container | Use IntersectionObserver on viewport (see [Scroll Detection](#scroll-detection-constraint-co)) |
 | Scroll/animation silently stops working when target ID is set | `useScroll` target stored in `useState` captures null on first render | Use `useRef` for live-read targets (see [Live-Read Refs](#live-read-refs-useref-not-usestate-co)) |
 | Named CMS layer not found by `findByFramerName` | Layer is a dynamic component instance — name not on `data-framer-name` | Wrap dynamic component in a plain frame carrying the expected name |
+| Code component shows its empty state though a Collection List is in its slot | The slot prop is an array of one element; `getCollectionData(array)` finds no query | Pass `props.collectionList[0]` (see [references/cms.md](references/cms.md)) |
+| CMS event lands on the wrong day for some visitors | A CMS date is the typed wall-clock time written as UTC, and local-time getters shift it | Read the day with `getUTCDate()` and friends (see [references/cms.md](references/cms.md)) |
 | Every named layer of a CMS item missing at once | The whole repeated Collection List item was made a component | Keep the item a plain frame (see [The Repeated Item Is Never a Component](#the-repeated-item-is-never-a-component-c)) |
 | Override that rewrites `props.style` height does nothing on the published page | Framer emits sizes as generated CSS classes, and the page root carries an inline `min-height: 100vh` | Set the value inline, with `!important` against the root (see [Published Sizing](#published-sizing-an-override-cannot-see-o)) |
 | URL changes but the page does not load after `router.navigate()` or a scripted link click | Framer softens programmatic cross-page navigation into a desynced route change | Gate in place instead (see [Cross-Page Navigation](#no-programmatic-cross-page-navigation-co)) |
@@ -503,7 +505,10 @@ stay plain frames at the item's top level.
 
 Code components consume a Framer CMS Collection List via a `ControlType.ComponentInstance` slot, then walk the resulting React element tree to extract per-item content. Core helpers:
 
-- `useQueryData` + `getCollectionData` to materialise items
+- `useQueryData` + `getCollectionData` to materialise items; the slot prop is an array, so pass
+  its first element
+- `addFieldsToSelect` to read fields the item template does not bind
+- CMS dates are wall-clock times written as UTC: read the day with `getUTC*`
 - `findByFramerName` to extract named layers from each item's template
 - Plain frames must wrap dynamic components if their name needs to be discoverable
 - `getPropertyControls(WrappedComponent)` to inherit controls when one CMS component wraps another
