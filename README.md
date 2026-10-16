@@ -46,6 +46,7 @@ Workarounds and tricks for Framer.
 ## Changelog
 
 **2026-10-16**
+- framer-agent-playbook skill: why a bullet or numbered list in CMS rich text sits flush under the text above it, and where its gap is set; link, code, quote and table styles can be moved into folders without breaking their uses.
 - framer-code-components-overrides skill: a code component's Collection List slot arrives as an array, how to read CMS fields the item template does not show, and why CMS dates should be read in UTC.
 - framer-agent-playbook skill: binding a CMS date field to text, and the date styles that do not apply.
 - framer-agent-playbook skill: auto-fit text that Safari clips, and overlays that leave keyboard focus behind.
