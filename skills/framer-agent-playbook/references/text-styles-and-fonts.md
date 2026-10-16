@@ -19,6 +19,10 @@
   `textStylePreset="Display/XL"`, so foldering a text preset renames it and orphans every reference.
   Colour styles are `var(--token-<id>)` and reorganise freely. Component names take folders safely
   too, because instances reference `canvasComponent/<id>:default`.
+- **Link, inline code, blockquote and table presets can be renamed into folders.** `SET <id>
+  name="Links/Nav"` on a `LinkStylePresetNode` (and the same on the other three types) carried every
+  layer's `linkStylePreset`, `inlineCodeStylePreset`, `blockquoteStylePreset` and
+  `tableStylePreset` to the new name, 155 references on one site, with no re-pointing (2026-10-16).
 - **A preset blocks inline type.** `+RichTextNode … textStylePreset="X" fontSize="14px"` (or
   `fontWeight`) errors with "Inline styles are ignored while a text style preset is set". Inline
   `textColor` and `textAlignment` are accepted, so colour overrides on dark sections need no extra

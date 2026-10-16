@@ -25,6 +25,17 @@
   - **Code-block language is forced to `JSX` on write.** `class="language-bash"`,
     `data-language="shell"` and `language="bash"` all round-trip as `data-language="JSX"`. Write
     JavaScript or it renders mis-highlighted.
+- **A list in CMS rich text takes its gap from the text layer, not from a style.** A rich text
+  layer maps styles to paragraphs, H1 to H6, links, inline code, quotes, tables and images
+  (`stylePresetParagraph`, `stylePresetHeading1`…, `linkStylePreset`, `inlineCodeStylePreset`,
+  `blockquoteStylePreset`, `tableStylePreset`, `imageStylePreset`), and has no slot for lists. A
+  bullet or numbered list borrows its font from the Paragraph style, but the space above it comes
+  from the layer's own `paragraphSpacing`, so with that unset every list sits 0px under the heading
+  or paragraph before it, even when the Paragraph style has spacing. Set `paragraphSpacing` on the
+  layer to match the Paragraph style, on each breakpoint replica (`SET <replicaId>
+  paragraphSpacing="24"` for a smaller phone value). The value only reaches blocks without a style
+  of their own: lists and embedded components. Two CMS templates on one site that share the same
+  styles can still differ here; check every rich text layer bound to a CMS field (2026-10-16).
 - **Reference fields take item *ids* on write but read back as *slugs*.** Passing slugs to `addItems`
   fails with `Bad reference, ID: <slug>`.
 - **Option variable `cases`** take a JSON array string with escaped quotes.
