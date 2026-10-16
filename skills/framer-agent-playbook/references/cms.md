@@ -9,6 +9,12 @@
   "Extrait") on the canvas and the published page. Set `collectionList.*` first, then bind in a
   second `applyChanges`. Re-issuing the same `SET` fixes an already-broken binding. A binding with a
   transform also resets typography: bind first, style in a second `SET`.
+- **A date field binds to text only through `toDateString`.** `text="var(--variable-<dateId>)"` is
+  refused ("is of type date, expected string"); use `text.from="var(--variable-<dateId>)"
+  text.transforms.0.name="toDateString" text.transforms.0.display="date-time"`. That `SET` drops the
+  text style preset, so set `textStylePreset` again in a second `SET`. `dateStyle="long"` or
+  `"full"` reports success and stays `medium` ("Oct 24, 2026, 7:00 PM"). The value is the typed
+  wall-clock time written as UTC and reads the same in every time zone (2026-10-16).
 - **CMS rich text is an HTML string.** A `formattedText` field's `value` is HTML, and
   `collection.addItems([{ id, fieldData: { <fieldId>: { type: "formattedText", value } } }])`
   updates it. Only the fields you name are touched, **but a named field is replaced wholesale, never

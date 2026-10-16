@@ -15,6 +15,20 @@ addPropertyControls(MyCMSComponent, {
 
 The user drops a Framer-native Collection List on the canvas and wires it to this slot.
 
+**The slot arrives as an array.** Framer now passes a `ComponentInstance` control as an array of
+one element (the agent DSL lists it as `{"type":"slot","maxCount":1}`). Given the array,
+`getCollectionData` finds no `query` and the component draws its empty state on the published page.
+Unwrap it first (2026-10-16):
+
+```typescript
+const list = Array.isArray(props.collectionList) ? props.collectionList[0] : props.collectionList
+const { query, propertyControlsByName, childrenFunction } = getCollectionData(list)
+```
+
+From an agent, fill the slot with the list's id, a ground node of the page:
+`SET <instanceId> $control__<name>.0="<listId>"`. `<name>` comes from the control's `title`, not
+its key: a control keyed `collectionList` with title "Collection" is `$control__collection`.
+
 ## Extract items via `useQueryData` + `getCollectionData`
 
 ```typescript
@@ -40,6 +54,30 @@ function getCollectionListItems(collectionList) {
     return Children.toArray(children)
 }
 ```
+
+## Read fields the template does not show
+
+`addFieldsToSelect` (same module) adds fields to the query, so the component can read a value the
+item template never binds, such as a date to place items on a calendar. Rows come back keyed by
+field id, in the list's sort order, and line up with the rendered items:
+
+```typescript
+import { getCollectionData, addFieldsToSelect } from "https://framer.com/m/CMSLibrary-09eo.js"
+
+const select = addFieldsToSelect(["Date"], query, propertyControlsByName)
+const rows = useQueryData({ ...query, select })
+const dateId = propertyControlsByName.Date.id
+const items = getCollectionListItems(list) // rows[i] belongs to items[i]
+```
+
+## Dates are wall-clock times written as UTC
+
+A CMS date with time holds the time the editor typed, written as UTC: 7 pm is
+`"…T19:00:00.000Z"`. Framer's own date text shows it unchanged in every time zone (7:00 PM in New
+York and in Tokyo, checked on a published page with the browser's time zone switched). So take an
+item's day from `getUTCFullYear()`, `getUTCMonth()` and `getUTCDate()`; `toLocaleDateString()`
+would move a late event to the next or previous day for some visitors. Today's date is a separate
+choice, usually the venue's time zone through `Intl.DateTimeFormat({ timeZone })` (2026-10-16).
 
 Item content lives at `item.props.children.props.children` — read past two wrapper levels to reach the user's template.
 

@@ -46,6 +46,8 @@ Workarounds and tricks for Framer.
 ## Changelog
 
 **2026-10-16**
+- framer-code-components-overrides skill: a code component's Collection List slot arrives as an array, how to read CMS fields the item template does not show, and why CMS dates should be read in UTC.
+- framer-agent-playbook skill: binding a CMS date field to text, and the date styles that do not apply.
 - framer-agent-playbook skill: auto-fit text that Safari clips, and overlays that leave keyboard focus behind.
 
 **2026-10-15**
