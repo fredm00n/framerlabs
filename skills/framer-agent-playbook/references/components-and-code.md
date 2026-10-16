@@ -140,6 +140,10 @@
   component inside it needs explicit size (`position="absolute"`, inset 0, or 100%): left on
   `auto` it renders as a small box in the top-left corner. A collection list item can hold its own
   overlay; bind the player's video to a CMS string field (2026-10-03).
+- **An overlay closes on Escape and a backdrop tap, but does not move keyboard focus.** Focus stays
+  on the page behind, and Tab walks the hidden page. An override on the open panel can focus its
+  first link or button on mount, keep Tab and Shift+Tab inside it, and give focus back to the
+  opener on unmount (2026-10-15).
 - **Serialize a component in the same `exec` before binding its existing variables.** `SET <child>
   text="var(--variable-<componentVar>)"` from page scope fails with "Expected an existing variable"
   (and drops the text style) unless `framer.agent.serialize({ id: <componentId> })` ran earlier in

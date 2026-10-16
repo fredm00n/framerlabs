@@ -45,6 +45,9 @@ Workarounds and tricks for Framer.
 
 ## Changelog
 
+**2026-10-16**
+- framer-agent-playbook skill: auto-fit text that Safari clips, and overlays that leave keyboard focus behind.
+
 **2026-10-15**
 - framer-agent-playbook skill: an SEO and speed pass. A new reference covers structured data from CMS fields, meta description fields, redirects on live sites, font files, the largest text on the first screen, analytics that miss page changes, and how to measure speed when asked. Everything in it is a suggestion to the user, never a blocker.
 

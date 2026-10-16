@@ -24,6 +24,24 @@
   `textColor` and `textAlignment` are accepted, so colour overrides on dark sections need no extra
   preset. To override type per node, detach first with `SET id textStylePreset="null";`, then a
   **second** `SET` with the inline styles.
+- **Auto-fit type (`fontSize="auto-fit(100%)"`) refuses a text style preset**, on the node and next
+  to one. A wordmark that must fill its width is a component holding one inline-styled text layer,
+  so its font still changes in one place (2026-10-15).
+- **Auto-fit text publishes as an SVG whose `viewBox` Framer measures once, when Fit is set**, at
+  the node's base font size, with the height rounded to whole pixels. The text sits in a
+  `foreignObject` of that box. Chrome paints glyphs past it and Safari clips them: at line height
+  0.7em, Safari cut the top and bottom off a round capital S. A later `lineHeight` or font change
+  does not re-measure the box. Give auto-fit text line height `1em`, and after changing its font or
+  line height, set the size to a number and back to Fit. Without WebKit, check the clip in
+  Chromium: hide everything but the SVG, screenshot it at 2x, and compare the rows that hold
+  ink with the SVG's box (2026-10-15).
+- **The agent can refuse auto-fit without saying so.** From midday on 2026-10-15,
+  `fontSize="auto-fit(100%)"` returned no error and left a px size, on `SET` and on `+RichTextNode`,
+  on any text node and font, from the CLI and from exec, in new sessions, for hours. Read `fontSize`
+  back after setting it; if it is still px, ask the user to pick Fit in the editor (2026-10-15).
+- **A text style with Pretty wrap (`textWrap` "pretty") publishes an auto-width label at its
+  min-content width**, so a row of one-line links overlapped. Turn Pretty wrap off on styles used
+  for short labels (2026-10-15).
 - **Preset breakpoint slots do not map to fixed widths. Read `minWidth` back after writing.** Two
   projects gave opposite orders:
   - One project (2026-08-21, presets that existed before tablet and phone were added):
