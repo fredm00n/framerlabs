@@ -8,6 +8,12 @@
   effective colour before and after on every copy, variants included: a colour fixed on the
   primary flows into a variant that already had the right colour from its own style. Rename by
   the same route; renaming a style in place orphans its references (2026-10-05).
+- **Moving an inline-styled layer onto a text style drops its inline colour.** On a text layer with
+  no style (font, size and colour set inline), `SET <id> textStylePreset="<style>"` replaced every
+  inline attribute, colour included: the layer took the style's own `textColor`, on every
+  breakpoint. Re-pointing from one style to another keeps colours (above); this case does not.
+  Read `textColor` before the switch and `SET` it again after: inline `textColor` is accepted next
+  to a style, and the breakpoint copies follow (2026-10-21).
 - **`getNodesOfTypes({types:["TextStylePresetNode"]})` also returns two breakpoint copies of every
   style**, named without the folder and carrying `$originalId`. Count and delete only entries
   without `$originalId`; copies whose original is gone can be deleted the same way.

@@ -45,6 +45,9 @@ Workarounds and tricks for Framer.
 
 ## Changelog
 
+**2026-10-21**
+- framer-agent-playbook skill: moving a text layer with inline styling onto a text style drops its colour, and how to keep it.
+
 **2026-10-16**
 - framer-agent-playbook skill: why a bullet or numbered list in CMS rich text sits flush under the text above it, and where its gap is set; link, code, quote and table styles can be moved into folders without breaking their uses.
 - framer-code-components-overrides skill: a code component's Collection List slot arrives as an array, how to read CMS fields the item template does not show, and why CMS dates should be read in UTC.
