@@ -5,7 +5,7 @@ user-invocable: true
 license: MIT
 metadata:
   author: fredm00n
-  version: 1.3.4
+  version: 1.4.0
 ---
 
 # Framer Agent playbook
@@ -127,6 +127,7 @@ Full detail: [`references/destructive-operations.md`](references/destructive-ope
 | Write or run an exec script, read `applyChanges` results, use temp ids | [`exec-scripts.md`](references/exec-scripts.md) |
 | Set node attributes, effects, event handlers, variants, sticky, rotation, aria | [`dsl-and-nodes.md`](references/dsl-and-nodes.md) |
 | Create or merge text styles, pick fonts, check variation axes | [`text-styles-and-fonts.md`](references/text-styles-and-fonts.md) |
+| File components, styles, colours and code into folders in the Assets panel | [`assets-panel.md`](references/assets-panel.md) |
 | Add tablet and phone, or fix a layout that breaks narrow | [`breakpoints.md`](references/breakpoints.md) |
 | Make components, variants, controls, code files, icons | [`components-and-code.md`](references/components-and-code.md) |
 | Read or write CMS collections, items, bindings, collection lists | [`cms.md`](references/cms.md) |

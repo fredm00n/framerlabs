@@ -45,6 +45,9 @@ Workarounds and tricks for Framer.
 
 ## Changelog
 
+**2026-10-30**
+- framer-agent-playbook skill: a new reference on the Assets panel: how its folders hold assets, why new assets and code files land loose at the top, and how to tuck Framer's built-in sections away. Also: wrap on a text style can shrink auto-width labels that use it.
+
 **2026-10-21**
 - framer-agent-playbook skill: moving a text layer with inline styling onto a text style drops its colour, and how to keep it.
 
