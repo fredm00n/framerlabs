@@ -21,10 +21,17 @@
   after `SET name` renames them. Instances still resolve `$control__variant="<new name>"`; check
   the published page rather than the controls list.
 
-- **Text style presets are referenced by full path, colour styles by id.** A node stores
-  `textStylePreset="Display/XL"`, so foldering a text preset renames it and orphans every reference.
-  Colour styles are `var(--token-<id>)` and reorganise freely. Component names take folders safely
-  too, because instances reference `canvasComponent/<id>:default`.
+- **Text style presets are referenced by full path, colour styles by id.** Through the
+  `@framer/agent` CLI a node stores `textStylePreset="Display/XL"`, so putting a slash in a text
+  preset's name renames it and orphans every reference. Colour styles are `var(--token-<id>)` and
+  reorganise freely. Component names take folders safely too, because instances reference
+  `canvasComponent/<id>:default`. Through the Framer connector, layers hold the style's id, and
+  the Assets panel files styles into folders without renaming them: see
+  [`assets-panel.md`](assets-panel.md) (2026-10-30).
+- **Wrap on a text style reaches every layer that uses it, auto-width ones included.** Setting
+  `textWrap: "pretty"` on a body style shrank two auto-width button labels that used it from 217 px
+  to 122 px, and the buttons overlapped. Set Balance or Pretty per layer, or only on a style that
+  no auto-width text uses, and compare layer sizes before and after (2026-10-30).
 - **Link, inline code, blockquote and table presets can be renamed into folders.** `SET <id>
   name="Links/Nav"` on a `LinkStylePresetNode` (and the same on the other three types) carried every
   layer's `linkStylePreset`, `inlineCodeStylePreset`, `blockquoteStylePreset` and
