@@ -92,6 +92,16 @@
   while the pointer is over the layer itself. A cursor parallax or magnet is one code override put on
   every layer: each measures its own centre against the pointer, so a falloff with distance makes
   the layers move by different amounts (2026-09-30).
+- **A custom cursor reaches the pointer through a spring, so any transition makes it trail and cut
+  corners.** Framer's runtime moves the cursor set in a layer's Cursor section (`customCursor`) with
+  one spring per axis built from its `transition`, and `follow: false` does not skip it. Only spring
+  transitions are accepted there: `type: "tween"` is refused ("Expected spring-physics,
+  spring-duration"). Measured in Chrome on fast circles and an L-shaped stroke: stiffness 837,
+  damping 45, mass 0.1 trailed the pointer by about 72 px and cut the corner by 28 px; Time 0.1s with
+  Bounce 0, 51 px and 9 px; `{ type: "spring", duration: "0s", bounce: 0 }` 17 px and 0 px, about
+  one frame. Every layer stores its own cursor and transition, so a site-wide change means patching
+  each one; a layout template owns its pages' breakpoint cursor, but cursors on child layers, such as
+  hover cursors on cards, stay per layer (2026-11-06).
 - **An override that moves a layer which also has an appear or scroll effect should write the CSS
   `translate` property** (`el.style.translate = "4px 2px"`), not `x`/`y` or `transform`. Framer's
   effects own `transform`; `translate` composes with it, so both play. Gate pointer effects on

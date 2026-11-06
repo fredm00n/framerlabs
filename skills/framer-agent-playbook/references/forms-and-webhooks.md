@@ -19,9 +19,12 @@ form posts to a Val Town val that creates a CMS item through `framer-api` (2026-
   rendered the last radio of a group checked on the published site; set `"false"` on every
   checkbox and radio. `formInputCheckedBorder="6px solid <ink>"` with a white
   `formInputCheckedFill` draws the checked dot.
-- **The agent cannot set a form's destination** (webhook, email). No DSL attribute exists and the
-  raw form node carries no such property. Build the form with the agent, then set the destination
-  in the editor (2026-09-25).
+- **Set a form's destination with `api.tree.patchFormDestinations(formId, destinations)`** through
+  the Framer connector, for example `[{ type: "email", emails: ["hello@example.com"] }]`, and read it
+  with `getFormDestinations`. A new email destination reads back with subject "New Submission" and
+  `verified: false`. The `@framer/agent` DSL has no attribute for it and the raw form node carries no
+  such property, so with the CLI the destination is still set in the editor (2026-09-25, connector
+  2026-11-06).
 - **The button says "Sent" before the webhook runs.** The browser posts to
   `api.framer.com/forms/v1/forms/<id>/submit`; Framer answers, the submit button switches to its
   Success variant, and only then does Framer call the webhook. The page cannot see the webhook's

@@ -45,6 +45,9 @@ Workarounds and tricks for Framer.
 
 ## Changelog
 
+**2026-11-06**
+- framer-agent-playbook skill: why a custom cursor trails the pointer and cuts corners, with measured settings, including the one that makes it follow instantly. Also: a form can now get its email destination through the Framer connector.
+
 **2026-10-30**
 - framer-agent-playbook skill: a new reference on the Assets panel: how its folders hold assets, why new assets and code files land loose at the top, and how to tuck Framer's built-in sections away. Also: wrap on a text style can shrink auto-width labels that use it.
 
