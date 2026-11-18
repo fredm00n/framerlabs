@@ -5,7 +5,7 @@ user-invocable: true
 license: MIT
 metadata:
   author: fredm00n
-  version: 1.1.1
+  version: 1.2.0
 ---
 
 # Framer Code Development
@@ -95,6 +95,7 @@ message; a wrong guess costs a whole build.
 | CMS event lands on the wrong day for some visitors | A CMS date is the typed wall-clock time written as UTC, and local-time getters shift it | Read the day with `getUTCDate()` and friends (see [references/cms.md](references/cms.md)) |
 | Every named layer of a CMS item missing at once | The whole repeated Collection List item was made a component | Keep the item a plain frame (see [The Repeated Item Is Never a Component](#the-repeated-item-is-never-a-component-c)) |
 | Override that rewrites `props.style` height does nothing on the published page | Framer emits sizes as generated CSS classes, and the page root carries an inline `min-height: 100vh` | Set the value inline, with `!important` against the root (see [Published Sizing](#published-sizing-an-override-cannot-see-o)) |
+| A page scaled or measured by code keeps the old breakpoint's size after a resize | Framer swapped the breakpoint layout in a render that landed after the resize had settled | Measure again after every render too (see [Measuring After a Breakpoint Swap](#measuring-after-a-breakpoint-swap-co)) |
 | URL changes but the page does not load after `router.navigate()` or a scripted link click | Framer softens programmatic cross-page navigation into a desynced route change | Gate in place instead (see [Cross-Page Navigation](#no-programmatic-cross-page-navigation-co)) |
 | HLS video permanently pixelated | `.m3u8` in Chrome without HLS.js | Use HLS.js dynamic import pattern (see [HLS Video Streaming](#hls-video-streaming-m3u8-c)) |
 | Overlay stuck "half-pressed" / needs two clicks to close | Triggering Framer interactions with synthetic events (`dispatchEvent`) | Call the React handler directly via fiber traversal (see [references/fiber-handlers.md](references/fiber-handlers.md)) |
@@ -120,7 +121,7 @@ message; a wrong guess costs a whole build.
 - [Rendering & SSR](#rendering--ssr) — hydration, canvas detection, concurrent rendering, npm imports
 - [CMS](#cms) — text timing in overrides, the repeated item, code-component CMS pattern, what the CMS makes public
 - [Overrides — specific patterns](#overrides--specific-patterns) — variant control, fiber handlers, component instances, Framer forms
-- [DOM & Performance](#dom--performance) — scroll detection, live-read refs, portals, published sizing, cross-page navigation, inserting next to React, live CMS refresh, common patterns
+- [DOM & Performance](#dom--performance) — scroll detection, live-read refs, portals, published sizing, measuring after a breakpoint swap, cross-page navigation, inserting next to React, live CMS refresh, common patterns
 - [Media](#media) — HLS video, WebGL
 - [Debug](#debug) — gated logging
 
@@ -723,6 +724,45 @@ URL bar hidden, so a one-screen page scrolls a few pixels until both sources say
 simplest fix is site-wide custom CSS, `[data-framer-root] { min-height: 100svh !important }`, plus
 the frame's own height; an override that sets both inline is the fallback (2026-08-19). Target published elements by `[data-framer-name="…"]`, which survives publishing, never by
 the generated `.framer-*` classes, which change.
+
+### Measuring After a Breakpoint Swap `[C/O]`
+
+Code that measures the page on `resize`, such as an override that scales the page or a hero to the
+window, can measure the old layout. Framer swaps a breakpoint's layers in a React render, and that
+render can land after the resize has settled: on a slow device, on a heavy page, or when Framer
+delivers the breakpoint change late (the playbook skill's breakpoints reference has a case where it
+never delivers it without help). The size then stays wrong until the next resize. On a layer that
+Framer re-renders when it swaps the breakpoint, such as the page's own frame, measure again after
+every render as well as on resize:
+
+```typescript
+const remeasure = useRef(() => {})
+useEffect(() => {
+    let frame = 0
+    const update = () => {
+        frame = 0
+        // measure and apply
+    }
+    remeasure.current = () => {
+        if (!frame) frame = requestAnimationFrame(update)
+    }
+    const onResize = () => remeasure.current()
+    window.addEventListener("resize", onResize)
+    update()
+    return () => {
+        remeasure.current = () => {}
+        cancelAnimationFrame(frame)
+        window.removeEventListener("resize", onResize)
+    }
+}, [])
+useEffect(() => {
+    remeasure.current() // no deps: runs after every render
+})
+```
+
+A published page does not re-render while it is scrolled or hovered (none counted on a heavy page),
+so the extra measure costs nothing at rest. Without it, one run at 4x CPU throttling ended on the
+widest layout drawn at the wrong scale (2026-11-18).
 
 ### No Programmatic Cross-Page Navigation `[C/O]`
 

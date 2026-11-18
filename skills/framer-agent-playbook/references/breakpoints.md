@@ -107,6 +107,84 @@ the live page at each width. Two checks find nearly everything:
 
 Exclude marquees and drawings by name from both, or they report as broken forever.
 
+### A published page stuck on the wrong breakpoint
+
+After a few quick window resizes, or after turning Chrome DevTools' device toolbar off, a published
+page can keep the layout of a breakpoint the window has already left, such as the phone layout in a
+desktop window. It stays that way until the window next crosses a breakpoint, and a reload fixes it,
+so it reads as a one-off. To confirm it, compare `matchMedia("(min-width: 1200px)").matches`, with
+the page's own breakpoint widths, against what is on screen: a layer that exists only on another
+breakpoint is rendered (2026-11-18).
+
+- **Cause, in the published runtime of 2026-11-18.** Framer's breakpoint hook listens for `change`
+  on one `MediaQueryList` per breakpoint, in an effect whose dependencies change on every render,
+  so each re-render removes its listeners and creates new lists. When the window crosses a
+  breakpoint while the page is re-rendering, the `change` event fires on the lists that were just
+  dropped, and the new lists already match, so they never fire. The device toolbar toggle passes
+  through a phone width for a frame, which is enough. The slower the page re-renders (a 3D canvas,
+  many code components), the more often it happens.
+- **Repro, to test a fix.** Through CDP, `Emulation.setDeviceMetricsOverride` to a narrower width
+  for 8 to 120 ms, then back. On a heavy one-page site, 12 of 12 dips to a phone width got stuck in
+  Chromium, and 4 of 6 dips to mixed widths in Playwright's WebKit. Slow drags and
+  `page.setViewportSize` almost never trigger it.
+- **Fix: site custom code at the start of `<head>`, on all pages.** It wraps
+  `MediaQueryList.prototype.addEventListener` for width queries in Framer's format, gives each new
+  breakpoint listener the current answer on the next task, and asks again 250 ms after a resize
+  stops. Framer ignores an answer equal to the breakpoint it already shows, so a page that is right
+  never re-renders: no renders were counted while scrolling or hovering, and clean loads at four
+  widths matched loads without it. After the fix, 0 dips got stuck in Chromium and WebKit. Remove it
+  once a run of the repro without it no longer gets stuck.
+
+```html
+<script>
+// Framer's breakpoint hook makes new matchMedia lists after every re-render. A breakpoint crossed
+// during a re-render fires on the dropped lists, and the new ones already match, so the page keeps
+// the old layout. This gives each new breakpoint listener the current answer, and asks again once
+// a resize settles. Framer ignores an answer equal to the layout it shows.
+(function () {
+    var P = window.MediaQueryList && MediaQueryList.prototype
+    if (!P || window.__breakpointKeeper) return
+    window.__breakpointKeeper = true
+    // Framer's queries: "(min-width: 1200px)", "(min-width: 810px) and (max-width: 1199.98px)"
+    var BREAKPOINT = /^\((min|max)-width: [\d.]+px\)( and \((min|max)-width: [\d.]+px\))?$/
+    var live = []
+    var add = P.addEventListener
+    var remove = P.removeEventListener
+    function answer(entry) {
+        if (live.indexOf(entry) < 0 || !entry.list.matches) return
+        entry.fn.call(entry.list, { type: "change", matches: true, media: entry.list.media })
+    }
+    P.addEventListener = function (type, fn, options) {
+        if (type === "change" && typeof fn === "function" && BREAKPOINT.test(this.media)) {
+            var entry = { list: this, fn: fn }
+            live.push(entry)
+            setTimeout(function () { answer(entry) }, 0)
+        }
+        return add.call(this, type, fn, options)
+    }
+    P.removeEventListener = function (type, fn, options) {
+        if (type === "change") {
+            for (var i = live.length - 1; i >= 0; i--) {
+                if (live[i].list === this && live[i].fn === fn) live.splice(i, 1)
+            }
+        }
+        return remove.call(this, type, fn, options)
+    }
+    var settle = 0
+    window.addEventListener("resize", function () {
+        clearTimeout(settle)
+        settle = setTimeout(function () { live.slice().forEach(answer) }, 250)
+    })
+})()
+</script>
+```
+
+Other code that listens to a plain width query with `addEventListener("change")` gets the same
+extra answer, with the true current value. A code component or override that measures the page on
+`resize`, to scale it for example, must also measure after the layout swap, which can land after
+the resize has settled: see "Measuring After a Breakpoint Swap" in the
+`framer-code-components-overrides` skill.
+
 Framer-specific mechanics, including the mobile-first preset model and the properties that cannot be
 overridden per breakpoint, are in [API traps](#api-traps) below.
 

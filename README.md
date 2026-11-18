@@ -45,6 +45,10 @@ Workarounds and tricks for Framer.
 
 ## Changelog
 
+**2026-11-18**
+- framer-agent-playbook skill: why a published page can stay on the wrong breakpoint after quick resizes or the DevTools device toolbar, how to reproduce it, and a small head snippet that fixes it.
+- framer-code-components-overrides skill: code that measures the page on resize must measure again after Framer swaps the breakpoint layout.
+
 **2026-11-06**
 - framer-agent-playbook skill: why a custom cursor trails the pointer and cuts corners, with measured settings, including the one that makes it follow instantly. Also: a form can now get its email destination through the Framer connector.
 
