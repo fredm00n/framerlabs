@@ -107,13 +107,14 @@ Unlike the regular `Collection` class, `ManagedCollection` only provides `getIte
 - Values must be strings. Pass `null` to delete a key.
 
 ### localStorage is sandboxed — but not durable
-`localStorage` is sandboxed per-plugin origin and per-user, synchronous, and has no Framer-imposed size limits — the right place for secrets like API keys (pluginData is collaborator-readable). **But it is not durable storage**: the plugin runs in a cross-origin iframe, so the value is per-browser/per-device, lost on cache/site-data clear, and can be evicted by browser anti-tracking (Safari ITP evicts script-writable storage after ~7 days without a first-party visit). Design for re-entry: only store what you can re-prompt for, tell the user keys are device-local, and **never** put a license key here — keep licenses in project-level `framer.setPluginData()` so they survive across devices and cache clears (or better, keep license state entirely server-side keyed on `framer.getCurrentUser().id` — see "Licensed plugins & project remix" below).
+`localStorage` is sandboxed per-plugin origin and per-user, synchronous, and has no Framer-imposed size limits — the right place for secrets like API keys (pluginData is collaborator-readable). **But it is not durable storage**: the plugin runs in a cross-origin iframe, so the value is per-browser/per-device, lost on cache/site-data clear, and can be evicted by browser anti-tracking (Safari ITP evicts script-writable storage after ~7 days without a first-party visit). Design for re-entry: only store what you can re-prompt for, tell the user keys are device-local, and **never** put a license key here: it would not survive a cache clear or a second device. Keep licenses on your backend (see "Licensed plugins & project remix" below).
 
 ### When to use which storage
 
 | Data | Storage | Reason |
 |------|---------|--------|
 | API keys, auth tokens | `localStorage` | Per-user, not shared, no size warnings |
+| License keys, activation ids | Your backend | `pluginData` is flagged by the marketplace scan; `localStorage` is not durable |
 | User preferences | `localStorage` | Per-user, synchronous |
 | Data source ID, slug field | `collection.setPluginData()` | Shared across collaborators |
 | Last sync timestamp | `collection.setPluginData()` | Shared state for the collection |
@@ -121,37 +122,62 @@ Unlike the regular `Collection` class, `ManagedCollection` only provides `getIte
 
 Per Framer's own docs: `pluginData` should NOT store sensitive data like API keys.
 
+The marketplace scan enforces this for license keys too, and it flags **any** `getPluginData` / `setPluginData` call on a credential key, including a one-time migration that reads an old value, moves it elsewhere and deletes it with `setPluginData(key, null)` (2026-11-19). The purpose of the call doesn't matter; the call site does. Users whose credential only exists in an old version's plugin data have to enter it again, so keep a re-entry path (or, for licenses, find them server-side: see below). Details in [marketplace.md](marketplace.md#the-automated-scan--what-it-checks).
+
 ### Licensed plugins & project remix
 
-When a Framer project is remixed, both `framer.setPluginData()` and `collection.setPluginData()` values carry over to the new project unchanged. Any license keys, API credentials, or project-bound state will appear valid in the remix.
+When a Framer project is remixed, both `framer.setPluginData()` and `collection.setPluginData()` values carry over to the new project unchanged. Anything project-bound stored there appears valid in the remix.
 
-**Detection**: `framer.getProjectInfo()` returns `{ id: string, name: string }` where `id` is a hashed project ID unique to each project. Store this at activation time and compare on every load — a mismatch means the project was remixed.
+**Detection**: `framer.getProjectInfo()` returns `{ id: string, name: string }` where `id` is a hashed project ID unique to each project. A remix gets a new one.
 
-**Pattern for licensed plugins:**
+**Never keep the license key or the provider's activation id in `pluginData`.** The marketplace scan rejects it as a credential every collaborator can read and reuse, even where earlier reviews of the same code had passed (2026-11-19). Keep both on your backend, keyed by what a license covers:
+
+- **Per project:** one row per Framer project ID (license key + activation id). The plugin sends the key once, with the project ID, to activate; after that it sends only the project ID to validate.
+- **Per account:** see "Strongest model" below.
+
+**Pattern for per-project licenses.** The only license value in project `pluginData` is a non-secret marker: the ID of the project the license was activated in, written at activation. It does two jobs. A marker that doesn't match the current project means a remix. No marker means nobody activated here, so free users never call the backend.
+
 ```typescript
 const { id: currentProjectId } = await framer.getProjectInfo()
+const licensedProject = await framer.getPluginData(PD_LICENSE_PROJECT) // a project ID, not a secret
 
-if (storedProjectId !== currentProjectId) {
-    // Remixed project — clear all stale credentials so new owner goes through fresh setup
+if (licensedProject && licensedProject !== currentProjectId) {
+    // Remixed project: drop the marker and any project-bound config so the new owner starts fresh.
+    // The backend has no license for the new project ID anyway.
     if (framer.isAllowedTo("setPluginData")) {
-        await framer.setPluginData(PD_LICENSE_KEY, null)
-        await framer.setPluginData(PD_LICENSE_INSTANCE, null)
-        await framer.setPluginData(PD_LICENSE_PROJECT, null)
-        if (collection) {
-            for (const key of [PD_API_KEY, PD_CHANNEL_ID, ...]) {
-                await collection.setPluginData(key, null)
-            }
+        try {
+            await framer.setPluginData(PD_LICENSE_PROJECT, null)
+        } catch (error) {
+            console.warn("Couldn't clear the license marker", error)
         }
     }
     setLicenseActive(false)
     setScreen("splash")
     return
 }
+
+if (licensedProject === currentProjectId) {
+    try {
+        setLicenseActive(await validateLicense(currentProjectId)) // the backend looks the license up by project ID
+    } catch {
+        setLicenseActive(false) // fail closed, see below
+    }
+} else {
+    setLicenseActive(false)
+}
 ```
 
-Note: silently skip the clear if `isAllowedTo` is false — `licenseActive = false` is correct regardless, and the clear will succeed on the next load. If your license provider supports a per-activation label (e.g. LemonSqueezy's `instance_name`), pass the project ID into it for per-project dashboard visibility. Whichever provider you use (Polar, LemonSqueezy, a Val Town backend keyed on the Framer user ID, ...), wrap validation server-side — the plugin should never call the payment provider directly.
+Skip the clear when `isAllowedTo` is false: `licenseActive = false` is correct regardless, and the clear succeeds on a later load. If your license provider supports a per-activation label (e.g. LemonSqueezy's `instance_name`), set it to the project ID: it shows per-project activations in the provider's dashboard, and it is what makes the migration below possible. Whichever provider you use (Polar, LemonSqueezy, ...), wrap validation server-side: the plugin should never call the payment provider directly.
 
-**Backend-relayed validation is a per-load hard dependency** — decide its failure mode deliberately. Fail-closed (treat as unlicensed when the backend is unreachable) is safest against piracy but downgrades paying users during an outage or a serverless cold-start. Mitigate by caching the last-valid result (in project `framer.setPluginData()`) for an offline grace period. Also: store the license key in project-level pluginData, **not** the activation logic — keep the activation instance label (e.g. LemonSqueezy `instance_name` = project ID) so "1 activation per project" still holds after the move to a backend.
+**Moving customers off a version that kept the key in `pluginData`.** Don't read the old key to move it, not even once: the scan flags the read-and-delete too (2026-11-19). Find the license server-side instead, on the first validate that finds no row for the project ID. With LemonSqueezy, and an old version that set `instance_name` to the project ID (verified on a real older project, 2026-11-19):
+
+1. List the store's activations with a store API key, kept as a backend secret: `GET https://api.lemonsqueezy.com/v1/license-key-instances?page[size]=100`, following `links.next`, and keep the ones whose `attributes.name` is the project ID.
+2. Fetch each match's key: `GET /v1/license-keys/{attributes.license_key_id}`. Check `attributes.product_id` is your product, then validate `attributes.key` with the activation's `attributes.identifier` as the instance id, as usual.
+3. Save the row, so the lookup runs once per project.
+
+This only reaches customers the plugin still sends to the backend, so the old version must have stored the project-ID marker too; otherwise the plugin can't tell an old customer from a free user without calling the backend for everyone. Activations labelled with anything else can't be matched, and those customers activate again. The lookup reads the whole activation list, one request per 100 activations, and answers "couldn't reach the license server" if the provider fails, rather than "unlicensed".
+
+**Backend-relayed validation is a per-load hard dependency** — decide its failure mode deliberately. Fail-closed (treat as unlicensed when the backend is unreachable) is safest against piracy but downgrades paying users during an outage or a serverless cold-start. Mitigate by caching the last-valid result (in project `framer.setPluginData()`, a timestamp, never the key) for an offline grace period. Keep the activation instance label (e.g. LemonSqueezy `instance_name` = project ID) so "1 activation per project" still holds after the move to a backend.
 
 **Strongest model — fully server-side, keyed on the Framer account (shipped in production 2026-07):** skip client-side license state entirely. `framer.getCurrentUser().id` is a 64-char hex id, stable per account across projects, devices, and browsers — the backend maps it to entitlement (`activate` once: user id + license key → provider; `status` on every open, throttled, fail-open on provider outages / fail-closed on activation). The client stores nothing but an optional non-authoritative localStorage hint to avoid a free-tier flash at boot. This makes the remix problem vanish (nothing project-bound to carry over), keeps every commercial identifier out of the bundle (the marketplace reviewer greps for those), and licensing survives cache clears. Per-seat limits delegate to the provider's activation limits (one activation consumed per Framer account). The tradeoff: the plugin needs a backend and gates entitlement-granting content server-side (serve the paid payload only to entitled user ids — client-side flags alone are trivially bypassed).
 

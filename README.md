@@ -45,6 +45,9 @@ Workarounds and tricks for Framer.
 
 ## Changelog
 
+**2026-11-19**
+- framer-plugins skill: Framer's review now rejects license keys in plugin data, and any read or write of a credential there, even a one-time migration. How to keep licenses on your backend per project, detect remixes with a project-ID marker, and find existing customers' licenses server-side without reading the old key. Also: the optional improvements an approval can come with.
+
 **2026-11-18**
 - framer-agent-playbook skill: why a published page can stay on the wrong breakpoint after quick resizes or the DevTools device toolbar, how to reproduce it, and a small head snippet that fixes it.
 - framer-code-components-overrides skill: code that measures the page on resize must measure again after Framer swaps the breakpoint layout.

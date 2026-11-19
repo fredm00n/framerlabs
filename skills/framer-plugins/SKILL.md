@@ -9,7 +9,7 @@ user-invocable: true
 license: MIT
 metadata:
   author: fredm00n
-  version: 1.5.1
+  version: 1.6.0
   verifiedAgainst: "@framer/plugin@4.0.1"
 ---
 
@@ -211,31 +211,34 @@ const SYNC_METHODS = [
 | Data source ID, last sync time | `collection.setPluginData()` | Shared across collaborators, tied to collection |
 | Project-level config | `framer.setPluginData()` | Shared, but 4kB total limit |
 | Large / growing state (per-item sync maps, caches) | `localStorage` | `pluginData`'s 2kB/entry cap blows up as the map grows; `localStorage` holds ~MBs |
-| License / entitlement state | Your backend, keyed on `framer.getCurrentUser().id` | The user id (64-char hex) is stable per account across projects/devices; nothing client-side to leak, share, or carry into a project remix. Strongest option for paid plugins — see pitfalls.md |
+| License / entitlement state | Your backend, keyed on the Framer project ID (per-project licenses) or `framer.getCurrentUser().id` (per-account) | Never the key in `pluginData` (rejected by the marketplace scan) or `localStorage` (not durable). Project `pluginData` holds at most a non-secret project-ID marker for remix detection. See pitfalls.md |
 
 - `pluginData`: 2kB per entry, 4kB total. Strings only. Pass `null` to delete.
 - **`pluginData` is for small, bounded values.** Anything that grows with content count (per-item delta-sync state, caches) will exceed 2kB/entry — keep it in `localStorage` and treat it as a rebuildable optimization, not shared truth (per-user, so collaborators rebuild it on first use).
 - `pluginData` is **namespaced per plugin** — other plugins (and external agent tooling) cannot read or write your keys.
+- **Credentials never touch `pluginData`, not even a read to migrate an old copy.** The marketplace scan flags any `getPluginData` / `setPluginData` on an API key or license key, read-and-delete migrations included, and re-reviews unchanged code on every submission (2026-11-19). Users whose key only lived there enter it again.
 - `localStorage`: Sandboxed per-plugin origin, persists across all projects, but per-browser/device — soft friction only, never enforcement.
 - `setPluginData()` (and other protected methods) surface an "Invoking protected message type" toast when called **without** a prior `framer.isAllowedTo()` check. It's the permission system, not a bug — gate the call and the toast disappears.
 
 ### Licensed plugins & project remix
 
-`pluginData` is **copied verbatim when a project is remixed** — license keys and credentials carry into the new project and look valid. Detect the remix and clear stale credentials on load:
+`pluginData` is **copied verbatim when a project is remixed**, so anything project-bound looks valid in the copy. Keep the license itself on your backend, keyed on the project ID, and store only the ID of the project it was activated in. A mismatch on load means a remix:
 
 ```typescript
 const { id: currentProjectId } = await framer.getProjectInfo()
-if (storedProjectId !== currentProjectId) {
-    // Remixed → wipe credentials so the new owner does a fresh activation
+const licensedProject = await framer.getPluginData(PD_LICENSE_PROJECT) // a project ID, not a secret
+if (licensedProject && licensedProject !== currentProjectId) {
+    // Remixed: reset project-bound state; the backend has no license for this project ID anyway
     if (framer.isAllowedTo("setPluginData")) {
-        await framer.setPluginData(PD_LICENSE_KEY, null)
-        // ... clear any other project-bound keys
+        try { await framer.setPluginData(PD_LICENSE_PROJECT, null) } catch { /* retried next load */ }
     }
     setLicenseActive(false)
+} else if (licensedProject === currentProjectId) {
+    setLicenseActive(await validateLicense(currentProjectId)) // sends only the project ID
 }
 ```
 
-Store the project ID at activation, compare every load; skip the clear silently if `isAllowedTo` is false (it retries next load). Full pattern + provider notes in [pitfalls.md](references/pitfalls.md#licensed-plugins--project-remix).
+No marker means nobody activated here, so free users never call the backend. Full pattern, failure modes and how to move customers off an older version that kept the key in `pluginData` (without reading it) in [pitfalls.md](references/pitfalls.md#licensed-plugins--project-remix).
 
 ## Code Files & Hosted Modules (canvas mode)
 
@@ -292,7 +295,7 @@ For deeper information, see the companion files in this skill directory:
 5. Handle `FramerPluginClosedError` in catch blocks — ignore it silently.
 6. Call `showUI` in `useLayoutEffect` to avoid resize flicker.
 7. Check `framer.isAllowedTo()` (synchronous, returns `boolean`) ADJACENT to every protected (mutating) call, wrap the call in try/catch with user-facing failure copy, and disable the triggering UI via `useIsAllowedTo` — the marketplace reviewer checks all three per call site. Reads aren't gated, so don't add no-op guards on them. Ship original sources + sourcemaps in the zip (see marketplace.md).
-8. Use `localStorage` for per-user secrets, `pluginData` for shared state — and clear credentials on project-remix mismatch (see Licensed plugins above).
+8. Use `localStorage` for per-user secrets, your backend for licenses, `pluginData` for shared non-secret state. Never read or write a credential in `pluginData`, not even to migrate it, and reset project-bound state on a project-remix mismatch (see Licensed plugins above).
 
 **Canvas / code-file plugins**
 9. Match canvas instances by `componentIdentifier`, never `insertURL` (version-pinned, changes on every file save).
