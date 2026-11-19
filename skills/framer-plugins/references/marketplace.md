@@ -42,6 +42,20 @@ Publication is immediate; the scan verdict typically lands **within hours** (two
 
 > **Observed 2026-07 (first-hand submission, "Needs Changes" within hours — confirms and sharpens the rubric):** the automated code review reads the ZIP's actual code and flagged protected operations "without consistently checking that the required permissions are available beforehand" even though the flows WERE gated at the UI level (reactive `useIsAllowedTo` disabling the CTA, distant early-return in the handler). What satisfies it, per protected call site: (1) an **explicit `framer.isAllowedTo()` check ADJACENT to the call** — not only a reactive hook far upstream; (2) **try/catch around the call** with clear user-facing failure copy (a silent early-return on a blocked click also reads as a failure to "handle gracefully"); (3) UI disabled when the permission is missing. **Dead/unreachable code performing ungated protected calls is review surface too** — the reviewer pattern-matches call sites, not reachability; delete parked code rather than argue it never runs. The same verdict asked to **"submit the original source files alongside the production bundle rather than only a minified build."** Treat that as a requirement, not a suggestion: `framer-plugin-tools pack` zips whatever `dist/` holds after the build script runs, so add `build.sourcemap: true` (Vite) plus a post-build step copying `src/` + configs + a build-repro README into `dist/source/`. Verify before submitting: grep the packed bundle — guards survive minification as `.isAllowedTo` property accesses; confirm zero commercial identifiers (sourcemaps and shipped sources included). A "Needs Changes" verdict is fixed via the dashboard's **New Version** flow on the same plugin record (same `framer.json` id — see "Submission identity" above), then reply to the review email so the team restores the listing.
 
+> **Observed 2026-11 (five rejections across two paid CMS plugins, then two approvals: the credential rule widened and the scan re-reads old code):**
+> 1. **A license key in project `framer.setPluginData()` is now rejected** as a credential every collaborator can read and reuse. The same code had passed earlier reviews, so "no credentials in shared plugin data" now covers license keys and activation ids, not only API keys. Fix: keep the license on your backend per Framer project ID, and keep only a non-secret project-ID marker in plugin data (pattern in [pitfalls.md](pitfalls.md#licensed-plugins--project-remix)).
+> 2. **Any `getPluginData` / `setPluginData` call on a credential key is flagged, whatever it is for.** A one-time migration that read the old key, sent it to the backend and then deleted it with `setPluginData(key, null)` was rejected exactly like storing it. The reviewer names the minified function and its call sites ("search for X: activate, claim, validate") and asks to remove the reads and writes.
+> 3. **Unchanged code is re-reviewed on every submission.** A migration that moved an API key out of collection plugin data into `localStorage`, untouched for three approved versions, was rejected on the fourth. A past approval is not evidence that a pattern is accepted. Grep the bundle for every plugin-data key that ever held a credential, old migrations included, before each submission.
+>
+> Consequence for users: anyone whose credential only exists in an old version's plugin data enters it again (keep a re-entry screen), unless your backend can find it on its own, which licenses usually allow (see pitfalls.md).
+>
+> **"Approved, with optional improvements"** is also a verdict: the plugin publishes and the email lists suggestions. Treat them as the next round's requirements. The ones seen so far:
+> - Say in the listing what license activation and checks send, and to which host (the license key, the Framer project ID, your backend's domain). A listing edit, so it needs no new version.
+> - Don't report success when a follow-up protected write failed: a sync whose metadata `setPluginData` failed must not end in a plain success message or a success `closePlugin` toast.
+> - Await plugin data writes behind a settings control and roll the control back when the write fails.
+> - Check the length of externally sourced strings (titles from a third-party API) before `setPluginData` (2kB per entry), and say clearly when a value can't be saved.
+> - Ask for confirmation before a sync removes CMS items, with a summary of what will go.
+
 ### Submission Statuses (Creator Dashboard)
 
 Observed first-hand: **Needs Changes** (revision requested; feedback by email) and **Published** (live on the Marketplace). **In Review** and **Rejected** are plausible but not confirmed against the current dashboard — the full four-status list is documented nowhere official.
@@ -139,6 +153,8 @@ Before submitting, verify:
 - [ ] No unrelated ads or promotional content
 - [ ] All features work exactly as described
 - [ ] Include test accounts or license keys with the submission (if needed for review)
+- [ ] No `getPluginData` / `setPluginData` call touches a credential (API key, license key, token, activation id), old migrations included
+- [ ] Paid plugins: the listing says what license activation and checks send, and to which host
 
 ---
 
