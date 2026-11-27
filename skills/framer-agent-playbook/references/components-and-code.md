@@ -319,3 +319,11 @@
   duplicate `const` in one scope came back clean, then blocked publishing on every page with a bare
   `CodeError`. Build it locally first: `npx esbuild@0.23.0 File.tsx --loader:.tsx=tsx --format=esm` (2026-10-08).
 - **Lenis eats the wheel over a nested scroller.** On a site with the Lenis component, an `overflow` auto frame does not scroll under the mouse until it carries `data-lenis-prevent`. Framer gives no way to add a data attribute, so an override sets it after mount (2026-10-08).
+- **A new component variant gets `fill: "#FFFFFF"` on its root**, so a `button` component rendered
+  as a white box: set `fill: null`. A variant with no visible child and auto size renders 200 by
+  200px: give a "hidden" variant an explicit size, such as 1 by 1px (2026-11-26).
+- **Change a code file through the Framer connector without retyping it.** In one program: read
+  the source (`api.files.read` returns `{ source }`), check its length and a hash against your
+  local copy, apply the line patches, check the result's hash against your edited local copy, then
+  `api.files.write`. A file over about 15KB is too long to pass inline: upload it as text with
+  `create_upload_url`, `fetch` it inside the program and write that (2026-11-26).

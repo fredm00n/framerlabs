@@ -61,7 +61,11 @@
 - **Load-more pagination only works with Framer's built-in "Load More" component**, which
   `collectionList.pagination="load-more"` inserts into the list. A local look-alike (same variants
   and `onClick` event) renders but loads nothing, and a deleted built-in re-added by hand is not
-  wired. Toggle `collectionList.pagination` to null and back to regenerate it. 2026-09-26.
+  wired. Toggle `collectionList.pagination` to null and back to regenerate it. 2026-09-26. Through the
+  Framer connector a project component can be the trigger: its click event runs the `LOAD_MORE`
+  action and its loading and hidden variants are named as the list's pagination variants, as the
+  connector's own pagination doc describes. One built that way loaded four items a click on a
+  published page (2026-11-26).
 - **`DEL <collectionNodeId>` deletes a collection and its items** (2026-10-06: gone from
   `getCollections()` and `getNodesOfTypes` afterwards). Older notes said the API could not; it can
   now, and there is no undo. Free a plan's collection slot this way only on the user's word. See
@@ -129,3 +133,28 @@
   call the item's variables are "not in scope" and the binding is dropped while the node is kept (2026-10-08).
 - **An `option` (enum) CMS field cannot feed a string component variable**: `toString` takes numbers
   only. Bind a string field instead (2026-10-08).
+- **A Collection List's page size is also the size of its first page**, so "four first, then eight
+  a click" needs a second list. A breakpoint replica of the list can take its own page size but
+  cannot clear pagination while the primary has one: to show the whole list on that breakpoint,
+  set a page size past the item count and hide the Load More instance there (2026-11-26).
+- **A list opened with Load More stays open after a refresh.** The native Load More writes the
+  pages it has loaded into the tab's history entry
+  (`history.state.paginationInfo.<list id>.currentPage`) and reads them back on the next load of
+  that entry, so a refresh shows the longer list, and no button once everything is loaded. Nothing
+  is in a cookie or in web storage, and the connector's docs name no setting for it. To start
+  closed on a refresh, put
+  this at the end of the head on every page:
+  `<script>(function(){try{var n=performance.getEntriesByType&&performance.getEntriesByType("navigation")[0],r=n?n.type==="reload":performance.navigation&&performance.navigation.type===1,s=history.state;if(r&&s&&s.paginationInfo){var c={},k;for(k in s)if(k!=="paginationInfo")c[k]=s[k];history.replaceState(c,"")}}catch(e){}})()</script>`.
+  Back from an item's page still returns to the open list: the router restores it with no page
+  load, so the script never runs there. It keys on Framer's own `paginationInfo` name; if Framer
+  renames it, the script does nothing (2026-11-27).
+- **`isSet` treats a rich text field that holds one empty paragraph as not set.** Clearing a rich
+  text field through the API leaves one empty paragraph, and a section whose `visible` is bound to
+  the field with `isSet` was still absent from the published page for those items (2026-11-26).
+- **Through the Framer connector, a CMS item's rich text reads as an array of blocks** on
+  `tree.get(itemId)["$control__<field>"]`. `tree.getInnerText` returns nothing for it
+  (2026-11-26).
+- **`linkStylePreset` on a rich text layer bound to a CMS field goes in a patch of its own.** With
+  that key alone the patch applied and the published links took the style. A patch that also
+  carried the layer's `text` reference answered "Expected text in the same patch or styling on
+  inserted TextRun children" and changed nothing (2026-11-27).

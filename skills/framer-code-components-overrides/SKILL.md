@@ -5,7 +5,7 @@ user-invocable: true
 license: MIT
 metadata:
   author: fredm00n
-  version: 1.2.0
+  version: 1.3.0
 ---
 
 # Framer Code Development
@@ -112,16 +112,19 @@ message; a wrong guess costs a whole build.
 | Hidden form value arrives empty | Value written after Framer read the form, or the input was injected by code | Native hidden input, filled in a capture-phase `submit` listener (see [Framer Forms](#framer-forms-o)) |
 | New CMS item only shows after a reload | CMS content is baked into each published deployment | Re-fetch the page and insert the new cards (see [Refreshing Published CMS Content](#refreshing-published-cms-content-in-place-o)) |
 | "Private" CMS field readable by anyone | Framer publishes every field of every item in `.framercms` files | Keep private data out of the CMS (see [CMS Data Is Public](#cms-data-is-public-co)) |
+| On iPhone, a swipe that starts on a link of an open menu opens the link | Framer opens a link from its tap gesture, which fires wherever the finger lifts on the link; the page behind the menu is locked, so no scroll cancels it | Cancel the press once it has moved (see [Swipe Guard](#swipe-guard-for-links-on-a-scroll-locked-page-o)) |
+| Classes a script added with `classList` vanish when state changes | React rewrote the element's `className` and dropped them | Keep `className` constant, toggle every dynamic class with `classList` (see [Classes a Script Sets](#classes-a-script-sets-on-a-react-element-c)) |
+| Page lands too low after a refresh or Back mid-page | A code component is 0px tall in the server's HTML and takes its height after mount | Keep the server-rendered box at its final height (see [Reserve the Final Height](#reserve-the-final-height-in-the-server-render-co)) |
 
 ## Contents
 
 - [Native First](#native-first-is-code-needed-at-all-co) — whether the feature needs code at all
 - [Foundations](#foundations) — components vs overrides, annotations, starter templates, multi-file components
 - [Authoring](#authoring) — property controls, fonts, color tokens
-- [Rendering & SSR](#rendering--ssr) — hydration, canvas detection, concurrent rendering, npm imports
+- [Rendering & SSR](#rendering--ssr) — hydration, reserving height in the server render, canvas detection, concurrent rendering, npm imports
 - [CMS](#cms) — text timing in overrides, the repeated item, code-component CMS pattern, what the CMS makes public
-- [Overrides — specific patterns](#overrides--specific-patterns) — variant control, fiber handlers, component instances, Framer forms
-- [DOM & Performance](#dom--performance) — scroll detection, live-read refs, portals, published sizing, measuring after a breakpoint swap, cross-page navigation, inserting next to React, live CMS refresh, common patterns
+- [Overrides — specific patterns](#overrides--specific-patterns) — variant control, fiber handlers, component instances, Framer forms, a swipe guard for menu links
+- [DOM & Performance](#dom--performance) — scroll detection, live-read refs, portals, published sizing, measuring after a breakpoint swap, cross-page navigation, inserting next to React, classes a script sets, live CMS refresh, common patterns
 - [Media](#media) — HLS video, WebGL
 - [Debug](#debug) — gated logging
 
@@ -377,6 +380,16 @@ const id = useClientId()
 
 After any publish or code change, retest every interactive element on the page, not only the one you edited: this kind of break shows up in code nobody touched.
 
+### Reserve the Final Height in the Server Render `[C/O]`
+
+A component that is 0px tall in the server's HTML and takes its height once its script has run
+moves everything below it after load. After a refresh or a Back mid-page the reader then lands too
+low by the missing height: about 340px on a page whose scroll-driven text block was built in an
+effect. Keep the server-rendered box at its final size. For a component that rebuilds a text layer,
+leave the source layer in the flow, laid out as the scripted version will be and kept invisible,
+until the script's version exists, and swap the two inside one `flushSync` so no frame holds both
+(2026-11-27).
+
 ### Canvas vs Preview Detection `[C/O]`
 
 ```typescript
@@ -623,6 +636,92 @@ useEffect(() => {
 }, [])
 ```
 
+### Swipe Guard for Links on a Scroll-Locked Page `[O]`
+
+On iPhone and iPad a Framer link opens from Framer's tap gesture, not from the click, and that
+gesture has no movement limit: it fires when the finger lifts anywhere on the link (read in
+Framer's runtime, 2026-11-26). On a normal page the browser cancels the press when the page starts
+to scroll. Behind an open full-screen menu the page is locked, so nothing cancels it, and a swipe
+that began on a menu link opens that link.
+
+Put this override on the menu's panel. Once a press has moved more than 10px it ends the press
+with a `pointercancel` of its own, which the tap gesture takes as no tap, and it swallows the
+click a mouse sends after a drag:
+
+```tsx
+const SWIPE_PX = 10
+
+export function withSwipeGuard(Component): ComponentType {
+    return (props) => {
+        const press = useRef(null) // the press in progress: pointer, start point, swiped or not
+        const blockClickUntil = useRef(0)
+        useEffect(() => {
+            const check = (e) => {
+                const p = press.current
+                if (!p || p.swiped || e.pointerId !== p.id) return
+                if (Math.hypot(e.clientX - p.x, e.clientY - p.y) <= SWIPE_PX) return
+                p.swiped = true
+                const target = p.target && p.target.isConnected ? p.target : window
+                target.dispatchEvent(
+                    new PointerEvent("pointercancel", {
+                        bubbles: true,
+                        pointerId: e.pointerId,
+                        pointerType: e.pointerType,
+                        isPrimary: e.isPrimary,
+                        clientX: e.clientX,
+                        clientY: e.clientY,
+                    })
+                )
+            }
+            const up = (e) => {
+                const p = press.current
+                if (!p || e.pointerId !== p.id) return
+                check(e)
+                if (p.swiped) blockClickUntil.current = performance.now() + 400
+                press.current = null
+            }
+            const cancel = (e) => {
+                // the browser's own cancel; the synthetic one above is not trusted and is skipped
+                if (e.isTrusted && press.current && e.pointerId === press.current.id) press.current = null
+            }
+            const click = (e) => {
+                if (performance.now() > blockClickUntil.current) return
+                blockClickUntil.current = 0
+                e.preventDefault()
+                e.stopPropagation()
+            }
+            // capture on the window, so these run before the listeners the tap gesture adds there
+            const o = { capture: true, passive: true }
+            window.addEventListener("pointermove", check, o)
+            window.addEventListener("pointerup", up, o)
+            window.addEventListener("pointercancel", cancel, o)
+            window.addEventListener("click", click, true)
+            return () => {
+                window.removeEventListener("pointermove", check, o)
+                window.removeEventListener("pointerup", up, o)
+                window.removeEventListener("pointercancel", cancel, o)
+                window.removeEventListener("click", click, true)
+            }
+        }, [])
+        return (
+            <Component
+                {...props}
+                onPointerDownCapture={(e) => {
+                    press.current = { id: e.pointerId, x: e.clientX, y: e.clientY, target: e.target, swiped: false }
+                    blockClickUntil.current = 0
+                }}
+            />
+        )
+    }
+}
+```
+
+A tap and a few pixels of jitter still open the link. To reproduce the bug in desktop Chromium,
+report the platform as iPhone and prevent `dragstart`: a mouse drag on a link otherwise starts the
+browser's own link drag, which cancels the pointer. Checked with real touch in the iOS simulator:
+60 drags over six menu rows opened nothing, and a tap on each link still opened its page
+(2026-11-26).
+
 ---
 
 ## DOM & Performance
@@ -835,6 +934,21 @@ the page, and the running page never learns about it. To show it without a reloa
 
 After a form submission, publishing can take 5 to 15 seconds: poll every couple of seconds with a
 time limit, and give the visitor a visible state while waiting.
+
+### Classes a Script Sets on a React Element `[C]`
+
+When a script owns some of an element's classes (`el.classList.add("on")` from a pointer or scroll
+handler) and React sets others through `className`, every change to that `className` rewrites the
+whole attribute and drops the script's classes. A cover in a carousel lost its raised, coloured
+state each time a `playing` class flipped, until the pointer moved again. Keep the element's
+`className` the same after the first render and toggle every dynamic class with `classList` in an
+effect (2026-11-27):
+
+```tsx
+useEffect(() => {
+    box.current?.querySelectorAll(".item").forEach((el, i) => el.classList.toggle("playing", i === playing))
+}, [playing])
+```
 
 ### Common Patterns
 

@@ -45,6 +45,10 @@ Workarounds and tricks for Framer.
 
 ## Changelog
 
+**2026-11-27**
+- framer-agent-playbook skill: a list opened with Load More stays open after a refresh, and a small head snippet closes it again. Why some pages answer with an empty shell right after a publish, and how to warm them. A text link's underline cut off at the foot of a section. Also new traps on breakpoints, text effects, borders, forms and editing code files through the connector.
+- framer-code-components-overrides skill: on iPhone, a swipe that starts on a link of an open menu opens the link, with an override that stops it. Also: classes a script sets vanish when React rewrites `className`, and a component with no height in the server's HTML makes a refresh land too low.
+
 **2026-11-19**
 - framer-plugins skill: Framer's review now rejects license keys in plugin data, and any read or write of a credential there, even a one-time migration. How to keep licenses on your backend per project, detect remixes with a project-ID marker, and find existing customers' licenses server-side without reading the old key. Also: the optional improvements an approval can come with.
 

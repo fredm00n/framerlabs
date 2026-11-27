@@ -5,7 +5,7 @@ user-invocable: true
 license: MIT
 metadata:
   author: fredm00n
-  version: 1.5.0
+  version: 1.5.1
 ---
 
 # Framer Agent playbook

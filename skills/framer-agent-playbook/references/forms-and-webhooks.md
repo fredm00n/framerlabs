@@ -50,3 +50,11 @@ form posts to a Val Town val that creates a CMS item through `framer-api` (2026-
 - **Native form inputs start 100px tall with a grey border.** Set the height, then
   `borderColor`, `borderStyle` and per-side `borderTop="0px" borderBottom="1px"`; `border="null"`
   followed by `borderBottom` did not apply (2026-10-08).
+- **The pointer shows an arrow over a single-line field's padding.** Framer puts a single-line
+  input's padding on a wrapper around the `<input>`, so the field's edge is not the input. Set the
+  input's own `cursor` to `"text"`, in every variant when the form sits in a component. A text
+  area keeps its padding on itself and needs nothing (2026-11-27).
+- **Check a form's Sending, Sent and error states on the published page without sending
+  anything.** In the test browser, answer the form's POST to `api.framer.com/forms/` yourself,
+  from a script that runs before the page's own: once with a success, once with a 500. No message
+  goes out, and each state can be looked at on every breakpoint (2026-11-25).

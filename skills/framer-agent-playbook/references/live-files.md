@@ -64,6 +64,9 @@ bridge talks to Framer.
   Framer stays the source of truth.
 - Record what changed, on which branch, the node ids, and everything new that was created. Say
   what is waiting on the user: a merge, a publish, or a sub-branch to fold in.
+- **Before a merge, compare every code file with your copy.** Through the Framer connector,
+  `publishing.status()` on a branch lists the changed pages, components, layout template and CMS
+  items, not code files. Read each file back and compare its length and a hash (2026-11-27).
 
 The quality checklist for the build itself is [`build-checklist.md`](build-checklist.md),
 including its section § In a client's existing file.
