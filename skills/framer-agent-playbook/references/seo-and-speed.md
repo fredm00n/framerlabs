@@ -39,6 +39,15 @@ instructions differ, follow the user.
   days later in one case, so resubmitting it and requesting indexing gets the section seen
   sooner. Importing the site into Bing Webmaster Tools from Search Console covers Bing, which
   ChatGPT search and Copilot draw on (2026-10-13).
+- **Right after a publish, some pages answer their first request with an empty shell.** A page
+  Framer has not optimised yet comes back as about 24 to 26KB: `<div id="main"></div>`, the site's
+  default title and description, no H1, and `ssg-status;desc="spa-fallback-optimized"` in the
+  `server-timing` header. On a site of about 67 pages, most of them CMS detail pages, 31 to 50
+  pages did after each of four publishes, branch previews included, and every page came back
+  whole (`ssg-status;desc="optimized"`) on a later request, all of them within about four minutes.
+  After each publish, request every sitemap address, again every 30s while any comes back under
+  30KB, so a crawler or a link preview does not get the shell first. And load a page twice before
+  calling its meta tags wrong (2026-11-25 and 2026-11-27).
 
 ## Speed
 

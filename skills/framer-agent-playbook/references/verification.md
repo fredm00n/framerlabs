@@ -50,3 +50,16 @@
   `align-content:normal` was added. Chrome applies `align-content` to block boxes now (2026-10-03).
 - **Headless screenshots can draw a WebGL canvas inside a sticky frame off its real position.** Check
   with `getBoundingClientRect` before chasing a layout bug (2026-10-08).
+- **A frame's border reads 0px in computed CSS.** Framer draws a border inside the box, as a layer
+  of its own, so `getComputedStyle` reports border widths of 0 on a frame with a visible 1px
+  line. Measure the line's own box (2026-11-26).
+- **A text link at the foot of a section can lose its underline.** A 1px underline offset `0.3em`
+  below 13px text sits about 0.75px under the link's line box. The next section paints over it
+  when its opaque fill starts at that edge, and the link's own section cuts it when it has
+  `overflow: clip`. Both happened on one site, on three pages. Sweep every page at each breakpoint
+  for links whose box ends within a pixel of their section's end, and give the section that ends
+  on the link 4px of bottom padding (2026-11-27).
+- **On a site with Smooth Scroll (Lenis), a wheel scroll arrives over several frames** and scroll
+  events go on for about a second after the wheel stops: a wheel back to the top read y 6, 4, 1,
+  0. Time a scroll-triggered run from the scroll event that crosses its line, not from the wheel,
+  and test it with a real wheel, since a scripted `scrollTo` jumps and skips Lenis (2026-11-27).

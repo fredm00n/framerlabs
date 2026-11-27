@@ -255,3 +255,24 @@ finished pages (2026-08-21).
 
 - **A page that uses a layout template refuses `layout` and `fill` on its breakpoints.** Add a Main
   frame inside instead (2026-10-08).
+- **A value set on the primary breakpoint reaches every replica that has no value of its own for
+  it, and a replica that has one keeps it.** A head row switched to top alignment on desktop also
+  top-aligned the tablet row, and a phone replica kept its old padding after the primary's padding
+  changed. After a change meant for one breakpoint, read the same property on every replica and set
+  it where it should differ (2026-11-27).
+- **A percentage width is published rounded to a whole percent.** 23.66% was served as `24%`,
+  74.55% as `75%` and 66.07% as `66%` in the page's CSS, while the canvas kept the decimals. Work
+  out a published gap from the rounded numbers. Two `fr` columns (`5fr` and `7fr`) met the edge of
+  a `5fr` column in another row to the pixel at four widths (2026-11-26).
+- **A grid whose row height is "Fit" drops an item's row span on the published page.** It
+  publishes `grid-auto-rows: min-content` and the item gets `grid-row: auto`. "Auto" publishes
+  `minmax(0, 1fr)` and keeps `span 2` (2026-11-26).
+- **A full-screen phone menu leaves a strip of the page under Safari's bottom bar on iOS 26 and
+  later.** The browser paints no `position: fixed` content under its own controls (Apple developer
+  forum thread 800798 and WebKit bug 297779, read 2026-11-26), so a panel sized to `100lvh` does
+  not cover it. What worked: hide the page behind the menu once the menu covers it, so the strip
+  can only show the body's own colour. With a nav layer named Nav first in the page and its open
+  menu as a variant named Phone Open, one rule in the head's custom code does it:
+  `[data-framer-name="Nav"]:has([data-framer-name="Phone Open"])~*{visibility:hidden;transition:visibility 0s .45s}`.
+  The page hides 0.45s after the menu opens and comes back at once on close. The rule keys on the
+  layer and variant names, so renaming either drops it. Checked in the iOS simulator (2026-11-26).

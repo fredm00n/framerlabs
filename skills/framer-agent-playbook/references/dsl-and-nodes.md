@@ -147,6 +147,10 @@
   border, but the published page drew a 1px top and bottom border on that node at tablet and phone.
   `borderLeft="0px solid"` fails with "Border is incomplete". What worked: keep the desktop widths
   and set `borderColor="rgba(0,0,0,0)"` on the breakpoint. Check borders live, not on the canvas (2026-09-27).
+- **On a primary node, remove a border by clearing it, not with a width of 0.** `borderTop: "0px"`
+  on a frame whose other sides are 0 leaves a "Border is incomplete" lint error. Set `borderTop`,
+  `borderBottom`, `borderLeft`, `borderRight`, `borderColor` and `borderStyle` to `null`
+  (2026-11-26).
 - **Virtual rich-text child ids (`v:<nodeId>:0:0`) go stale between exec calls**, and a `SET` on
   one fails with "no longer exists". `framer.agent.replaceText({ id, searchText, replaceText })` on
   the owning node works and keeps the preset. A `TextLineBreak` adds no space to `textContent`, so
@@ -239,3 +243,19 @@
   phone menu keeps its clip (2026-10-08).
 - **`overflowY="auto"` and `overscroll` are refused until `overflow="auto"` is set**, in an earlier command (2026-10-08).
 - **A fixed frame pinned left, right, top and bottom publishes stretched** to those pins, though `serialize` still reports `width` and `height` as 100px (2026-10-08).
+- **A text effect's time between two tokens is `textEffect.style.transition.delay`, not the
+  top-level `textEffect.delay`.** With `tokenization: "character"` and a transition delay of 0.05s
+  the published letters started 50ms apart, so an 82-letter line took 4.1s; at 0.01s they start
+  10ms apart. The top-level `delay` showed no clear effect. Time a text effect on the published
+  page before calling it done (2026-11-27).
+- **An appear effect's `stagger` works on a node inside a Collection List's repeated item**: each
+  item starts that much after the one before, among the items that enter the screen together. On
+  the list itself it does nothing (2026-11-26).
+- **Code that writes `opacity` or `transition` inline on a layer wipes an appear effect's starting
+  opacity there**, so the layer dips instead of fading in. Put the appear effect on the layer's
+  children (2026-11-26).
+- **A link cannot be set on a component instance.** Through the Framer connector a patch answers
+  "Cannot apply `link` to `ComponentInstanceNode`". Wrap the instance in a frame that carries the
+  link, give the frame the instance's sizes and set the instance to fill it. Beware of nested
+  links: check first that the instance holds no link of its own, or the wrapper makes it a link
+  inside a link, the trap in [Components and code](components-and-code.md) (2026-11-27).
